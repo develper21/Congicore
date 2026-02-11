@@ -1,30 +1,23 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { 
-  Mail, 
+import {
+  Mail,
   CheckCircle,
   ArrowRight,
   RefreshCw,
   Brain
 } from "lucide-react"
 
-export default function VerifyEmailPage() {
+function VerifyEmailForm() {
   const [isVerified, setIsVerified] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const [email, setEmail] = useState("")
   const router = useRouter()
   const searchParams = useSearchParams()
-
-  useEffect(() => {
-    const emailParam = searchParams.get("email")
-    if (emailParam) {
-      setEmail(emailParam)
-    }
-  }, [searchParams])
+  const email = searchParams.get("email") || ""
 
   const handleVerify = async () => {
     setIsLoading(true)
@@ -80,7 +73,7 @@ export default function VerifyEmailPage() {
           </div>
           <h1 className="text-2xl font-bold">Verify your email</h1>
           <p className="text-muted-foreground">
-            We've sent a verification link to<br />
+            We&apos;ve sent a verification link to<br />
             <span className="font-medium">{email || "your email"}</span>
           </p>
         </div>
@@ -99,16 +92,16 @@ export default function VerifyEmailPage() {
                 </div>
                 <p className="text-sm text-muted-foreground">
                   Click the verification link in your email to activate your account.
-                  If you don't see it, check your spam folder.
+                  If you don&apos;t see it, check your spam folder.
                 </p>
               </div>
 
               <div className="space-y-3">
                 <Button className="w-full" onClick={handleVerify} disabled={isLoading}>
-                  {isLoading ? "Verifying..." : "I've verified my email"}
+                  {isLoading ? "Verifying..." : "I&apos;ve verified my email"}
                   <CheckCircle className="ml-2 h-4 w-4" />
                 </Button>
-                
+
                 <Button variant="outline" className="w-full" onClick={handleResend} disabled={isLoading}>
                   {isLoading ? "Sending..." : "Resend verification email"}
                   <RefreshCw className="ml-2 h-4 w-4" />
@@ -128,5 +121,20 @@ export default function VerifyEmailPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5 p-4">
+        <div className="flex flex-col items-center space-y-4">
+          <Brain className="h-12 w-12 text-primary animate-pulse" />
+          <p className="text-lg font-medium">Loading...</p>
+        </div>
+      </div>
+    }>
+      <VerifyEmailForm />
+    </Suspense>
   )
 }

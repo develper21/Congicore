@@ -1,21 +1,21 @@
 "use client"
 
-import { useState } from "react"
+import { useState, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { AuthGuard } from "@/components/auth/auth-guard"
 import { Layout } from "@/components/layout/layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { 
-  CreditCard, 
-  Check, 
+import {
+  CreditCard,
+  Check,
   ArrowLeft,
   Shield,
   Zap,
   Crown,
   Star,
-  Calendar,
-  AlertCircle
+  AlertCircle,
+  Brain
 } from "lucide-react"
 
 const planDetails = {
@@ -39,15 +39,14 @@ const planDetails = {
   }
 }
 
-export default function CheckoutPage() {
+function CheckoutForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [selectedPlan, setSelectedPlan] = useState(searchParams.get("plan") || "free")
+  const [selectedPlan] = useState(searchParams.get("plan") || "free")
   const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly")
   const [paymentMethod, setPaymentMethod] = useState<"card" | "paypal">("card")
   const [isProcessing, setIsProcessing] = useState(false)
   const [currentStep, setCurrentStep] = useState(1)
-
   const [cardDetails, setCardDetails] = useState({
     number: "",
     expiry: "",
@@ -60,8 +59,8 @@ export default function CheckoutPage() {
   const [paypalEmail, setPaypalEmail] = useState("")
 
   const plan = planDetails[selectedPlan as keyof typeof planDetails]
-  const finalPrice = billingCycle === "yearly" 
-    ? parseInt(plan.price.replace("$", "")) * 12 * 0.8 
+  const finalPrice = billingCycle === "yearly"
+    ? parseInt(plan.price.replace("$", "")) * 12 * 0.8
     : parseInt(plan.price.replace("$", ""))
 
   const handleBack = () => {
@@ -80,13 +79,13 @@ export default function CheckoutPage() {
 
   const handlePayment = async () => {
     setIsProcessing(true)
-    
+
     // Simulate payment processing
     setTimeout(() => {
       // Store subscription info
       localStorage.setItem("subscription-plan", selectedPlan)
       localStorage.setItem("billing-cycle", billingCycle)
-      
+
       // Redirect to success page
       router.push("/billing/success")
     }, 3000)
@@ -129,7 +128,7 @@ export default function CheckoutPage() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-2">
                     {plan.features.map((feature, index) => (
                       <div key={index} className="flex items-center space-x-2">
@@ -192,10 +191,9 @@ export default function CheckoutPage() {
             <CardContent>
               <div className="space-y-6">
                 <div className="grid gap-4 md:grid-cols-2">
-                  <Card 
-                    className={`cursor-pointer border-2 ${
-                      paymentMethod === "card" ? "border-primary bg-primary/5" : "border-border"
-                    }`}
+                  <Card
+                    className={`cursor-pointer border-2 ${paymentMethod === "card" ? "border-primary bg-primary/5" : "border-border"
+                      }`}
                     onClick={() => setPaymentMethod("card")}
                   >
                     <CardContent className="p-6 text-center">
@@ -207,10 +205,9 @@ export default function CheckoutPage() {
                     </CardContent>
                   </Card>
 
-                  <Card 
-                    className={`cursor-pointer border-2 ${
-                      paymentMethod === "paypal" ? "border-primary bg-primary/5" : "border-border"
-                    }`}
+                  <Card
+                    className={`cursor-pointer border-2 ${paymentMethod === "paypal" ? "border-primary bg-primary/5" : "border-border"
+                      }`}
                     onClick={() => setPaymentMethod("paypal")}
                   >
                     <CardContent className="p-6 text-center">
@@ -243,7 +240,7 @@ export default function CheckoutPage() {
                             maxLength={19}
                           />
                         </div>
-                        
+
                         <div className="grid gap-4 md:grid-cols-2">
                           <div>
                             <label className="text-sm font-medium">Expiry Date</label>
@@ -327,7 +324,7 @@ export default function CheckoutPage() {
                           />
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          You'll be redirected to PayPal to complete your payment securely.
+                          You&apos;ll be redirected to PayPal to complete your payment securely.
                         </p>
                       </div>
                     </CardContent>
@@ -371,7 +368,7 @@ export default function CheckoutPage() {
               <div className="space-y-6">
                 <div className="border rounded-lg p-6">
                   <h3 className="font-semibold mb-4">Order Summary</h3>
-                  
+
                   <div className="space-y-3">
                     <div className="flex justify-between">
                       <span>Plan</span>
@@ -419,7 +416,7 @@ export default function CheckoutPage() {
                 <div className="flex items-center space-x-2 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <AlertCircle className="h-5 w-5 text-yellow-600" />
                   <p className="text-sm text-yellow-800">
-                    By clicking "Complete Purchase", you agree to our Terms of Service and Privacy Policy.
+                    By clicking &quot;Complete Purchase&quot;, you agree to our Terms of Service and Privacy Policy.
                   </p>
                 </div>
 
@@ -428,8 +425,8 @@ export default function CheckoutPage() {
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back
                   </Button>
-                  <Button 
-                    onClick={handlePayment} 
+                  <Button
+                    onClick={handlePayment}
                     disabled={isProcessing}
                     className="min-w-[150px]"
                   >
@@ -471,17 +468,15 @@ export default function CheckoutPage() {
           <div className="flex items-center justify-between">
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                  step <= currentStep 
-                    ? "bg-primary text-primary-foreground" 
-                    : "bg-muted text-muted-foreground"
-                }`}>
+                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${step <= currentStep
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-muted text-muted-foreground"
+                  }`}>
                   {step}
                 </div>
                 {step < 3 && (
-                  <div className={`h-1 w-full mx-2 ${
-                    step < currentStep ? "bg-primary" : "bg-muted"
-                  }`} />
+                  <div className={`h-1 w-full mx-2 ${step < currentStep ? "bg-primary" : "bg-muted"
+                    }`} />
                 )}
               </div>
             ))}
@@ -491,5 +486,22 @@ export default function CheckoutPage() {
         </div>
       </Layout>
     </AuthGuard>
+  )
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense fallback={
+      <Layout>
+        <div className="max-w-2xl mx-auto space-y-6 pt-12">
+          <div className="flex flex-col items-center space-y-4">
+            <Brain className="h-12 w-12 text-primary animate-pulse" />
+            <p className="text-lg font-medium">Preparing checkout...</p>
+          </div>
+        </div>
+      </Layout>
+    }>
+      <CheckoutForm />
+    </Suspense>
   )
 }

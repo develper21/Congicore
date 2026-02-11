@@ -1,12 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useState, Suspense } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { 
-  Lock, 
-  Eye, 
+import {
+  Lock,
+  Eye,
   EyeOff,
   CheckCircle,
   ArrowLeft,
@@ -14,26 +14,17 @@ import {
   Brain
 } from "lucide-react"
 
-export default function ResetPasswordPage() {
+function ResetPasswordForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
-  const [token, setToken] = useState("")
   const router = useRouter()
-  const searchParams = useSearchParams()
-
-  useEffect(() => {
-    const tokenParam = searchParams.get("token")
-    if (tokenParam) {
-      setToken(tokenParam)
-    }
-  }, [searchParams])
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    
+
     // Simulate password reset
     setTimeout(() => {
       setIsSuccess(true)
@@ -171,5 +162,20 @@ export default function ResetPasswordPage() {
         </Card>
       </div>
     </div>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/10 to-primary/5 p-4">
+        <div className="flex flex-col items-center space-y-4">
+          <Brain className="h-12 w-12 text-primary animate-pulse" />
+          <p className="text-lg font-medium">Loading...</p>
+        </div>
+      </div>
+    }>
+      <ResetPasswordForm />
+    </Suspense>
   )
 }

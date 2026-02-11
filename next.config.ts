@@ -11,6 +11,8 @@ const nextConfig: NextConfig = {
     }
     return config;
   },
+  // Added to silence the Turbopack/Webpack conflict error in Next.js 16+
+  turbopack: {},
 };
 
 export default nextConfig;
