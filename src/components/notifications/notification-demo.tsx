@@ -1,39 +1,42 @@
-"use client"
+"use client";
 
-import { useNotifications } from "./notification-provider"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { 
-  CheckCircle, 
-  AlertCircle, 
-  AlertTriangle, 
+import { useNotifications } from "./notification-provider";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  CheckCircle,
+  AlertCircle,
+  AlertTriangle,
   Info,
   FileText,
   MessageSquare,
   Brain,
   Settings,
-  Palette
-} from "lucide-react"
+  Palette,
+} from "lucide-react";
 
 export function NotificationDemo() {
-  const { addNotification, setTheme, theme } = useNotifications()
+  const { addNotification, setTheme, theme } = useNotifications();
 
   const notifications = [
     {
       title: "Document Processed",
-      message: "Machine Learning Basics.pdf has been successfully processed and indexed.",
+      message:
+        "Machine Learning Basics.pdf has been successfully processed and indexed.",
       type: "success" as const,
       icon: <CheckCircle className="h-5 w-5 text-green-500" />,
     },
     {
       title: "Upload Failed",
-      message: "Unable to process the uploaded file. Please check the format and try again.",
+      message:
+        "Unable to process the uploaded file. Please check the format and try again.",
       type: "error" as const,
       icon: <AlertCircle className="h-5 w-5 text-red-500" />,
     },
     {
       title: "Storage Warning",
-      message: "You're running low on storage space. Consider upgrading your plan.",
+      message:
+        "You're running low on storage space. Consider upgrading your plan.",
       type: "warning" as const,
       icon: <AlertTriangle className="h-5 w-5 text-yellow-500" />,
       action: {
@@ -75,7 +78,7 @@ export function NotificationDemo() {
       type: "system" as const,
       icon: <Settings className="h-5 w-5 text-gray-500" />,
     },
-  ]
+  ];
 
   const themes = [
     { name: "Default", value: "default" as const },
@@ -84,7 +87,7 @@ export function NotificationDemo() {
     { name: "Glass", value: "glass" as const },
     { name: "Neon", value: "neon" as const },
     { name: "Retro", value: "retro" as const },
-  ]
+  ];
 
   return (
     <Card>
@@ -135,12 +138,15 @@ export function NotificationDemo() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => addNotification({
-                title: "Persistent Notification",
-                message: "This notification won't auto-dismiss. Click the X to close it.",
-                type: "info",
-                duration: 0,
-              })}
+              onClick={() =>
+                addNotification({
+                  title: "Persistent Notification",
+                  message:
+                    "This notification won't auto-dismiss. Click the X to close it.",
+                  type: "info",
+                  duration: 0,
+                })
+              }
               className="text-xs"
             >
               Persistent Notification
@@ -148,11 +154,13 @@ export function NotificationDemo() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => addNotification({
-                title: "Quick Success",
-                type: "success",
-                duration: 2000,
-              })}
+              onClick={() =>
+                addNotification({
+                  title: "Quick Success",
+                  type: "success",
+                  duration: 2000,
+                })
+              }
               className="text-xs"
             >
               Quick Success (2s)
@@ -161,5 +169,5 @@ export function NotificationDemo() {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

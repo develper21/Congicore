@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useNotifications } from "./notification-provider"
-import { NotificationItem } from "./notification-item"
-import { NotificationTheme } from "./types"
+import { useEffect, useState } from "react";
+import { useNotifications } from "./notification-provider";
+import { NotificationItem } from "./notification-item";
+import { NotificationTheme } from "./types";
 
 const themeStyles = {
   default: {
@@ -30,19 +30,19 @@ const themeStyles = {
     container: "fixed top-4 right-4 z-50 space-y-2",
     item: "bg-yellow-100 border-4 border-black shadow-lg rounded-none p-4 min-w-[300px] max-w-[400px]",
   },
-}
+};
 
 export function NotificationContainer() {
-  const { notifications, theme } = useNotifications()
-  const [mounted, setMounted] = useState(false)
+  const { notifications, theme } = useNotifications();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
-  if (!mounted) return null
+  if (!mounted) return null;
 
-  const currentTheme = themeStyles[theme]
+  const currentTheme = themeStyles[theme];
 
   return (
     <div className={currentTheme.container}>
@@ -55,5 +55,5 @@ export function NotificationContainer() {
         />
       ))}
     </div>
-  )
+  );
 }
