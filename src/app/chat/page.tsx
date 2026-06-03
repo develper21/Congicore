@@ -1,80 +1,92 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Layout } from "@/components/layout/layout"
-import { Card, CardContent } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { 
-  Send, 
-  Mic, 
-  MicOff, 
-  Paperclip, 
+import { useState, useEffect } from "react";
+import { Layout } from "@/components/layout/layout";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { api } from "@/lib/api";
+import {
+  Send,
+  Mic,
+  MicOff,
+  Paperclip,
   Brain,
   User,
-  Sparkles
-} from "lucide-react"
+  Sparkles,
+  Loader2,
+  MessageSquare,
+} from "lucide-react";
 
 interface Message {
-  id: string
-  content: string
-  sender: "user" | "ai"
-  timestamp: Date
+  _id: string;
+  content: string;
+  sender: "user" | "ai";
+  timestamp: string;
 }
 
-const initialMessages: Message[] = [
-  {
-    id: "1",
-    content: "Hello! I'm your AI Knowledge Twin. I can help you search through your documents, answer questions about your knowledge base, and assist with learning. What would you like to explore today?",
-    sender: "ai",
-    timestamp: new Date(Date.now() - 1000 * 60 * 5)
-  },
-  {
-    id: "2",
-    content: "Can you summarize the key points from the Machine Learning Basics document I uploaded yesterday?",
-    sender: "user",
-    timestamp: new Date(Date.now() - 1000 * 60 * 3)
-  },
-  {
-    id: "3",
-    content: "Based on the Machine Learning Basics document, here are the key points:\n\n1. **Supervised Learning**: Uses labeled data to train models\n2. **Unsupervised Learning**: Finds patterns in unlabeled data\n3. **Neural Networks**: Mimic human brain structure\n4. **Feature Engineering**: Critical for model performance\n5. **Overfitting**: Common challenge to avoid\n\nThe document also covers practical examples and implementation details. Would you like me to elaborate on any of these topics?",
-    sender: "ai",
-    timestamp: new Date(Date.now() - 1000 * 60 * 2)
-  }
-]
-
 export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>(initialMessages)
-  const [inputValue, setInputValue] = useState("")
-  const [isRecording, setIsRecording] = useState(false)
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputValue, setInputValue] = useState("");
+  const [isRecording, setIsRecording] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSendMessage = () => {
+  useEffect(() => {
+    fetchChats();
+  }, []);
+
+  const fetchChats = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.getChats();
+      if (response.chats && response.chats.length > 0) {
+        const latestChat = response.chats[0];
+        const chatDetail = await api.getChat(latestChat._id);
+        setMessages(chatDetail.chat.messages || []);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch chat data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSendMessage = async () => {
     if (inputValue.trim()) {
       const newMessage: Message = {
-        id: Date.now().toString(),
+        _id: Date.now().toString(),
         content: inputValue,
         sender: "user",
-        timestamp: new Date()
+        timestamp: new Date().toISOString(),
+      };
+
+      setMessages([...messages, newMessage]);
+      setInputValue("");
+
+      try {
+        // Send message to API
+        // For now, simulate AI response
+        setTimeout(() => {
+          const aiResponse: Message = {
+            _id: (Date.now() + 1).toString(),
+            content:
+              "I'm processing your request and searching through your knowledge base for the most relevant information...",
+            sender: "ai",
+            timestamp: new Date().toISOString(),
+          };
+          setMessages((prev) => [...prev, aiResponse]);
+        }, 1000);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to send message");
       }
-      
-      setMessages([...messages, newMessage])
-      setInputValue("")
-      
-      // Simulate AI response
-      setTimeout(() => {
-        const aiResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          content: "I'm processing your request and searching through your knowledge base for the most relevant information...",
-          sender: "ai",
-          timestamp: new Date()
-        }
-        setMessages(prev => [...prev, aiResponse])
-      }, 1000)
     }
-  }
+  };
 
   const toggleRecording = () => {
-    setIsRecording(!isRecording)
-  }
+    setIsRecording(!isRecording);
+  };
 
   return (
     <Layout>
@@ -87,42 +99,76 @@ export default function ChatPage() {
               </div>
               <div>
                 <h2 className="font-semibold">AI Knowledge Twin</h2>
-                <p className="text-sm text-muted-foreground">Always here to help you learn</p>
+                <p className="text-sm text-muted-foreground">
+                  Always here to help you learn
+                </p>
               </div>
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div className={`flex items-start space-x-3 max-w-[80%] ${message.sender === "user" ? "flex-row-reverse space-x-reverse" : ""}`}>
-                  <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                    message.sender === "user" 
-                      ? "bg-primary text-primary-foreground" 
-                      : "bg-gradient-to-r from-primary to-primary/60 text-white"
-                  }`}>
-                    {message.sender === "user" ? (
-                      <User className="h-4 w-4" />
-                    ) : (
-                      <Brain className="h-4 w-4" />
-                    )}
-                  </div>
-                  <div className={`rounded-lg p-3 ${
-                    message.sender === "user"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted"
-                  }`}>
-                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                    <p className="text-xs opacity-70 mt-1">
-                      {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : error ? (
+              <div className="text-center py-12">
+                <p className="text-red-500 mb-4">{error}</p>
+                <Button onClick={fetchChats}>Retry</Button>
+              </div>
+            ) : messages.length === 0 ? (
+              <EmptyState
+                icon={MessageSquare}
+                title="No messages yet"
+                description="Start a conversation with your AI Knowledge Twin"
+                action={{
+                  label: "Send a message",
+                  onClick: () => {/* Focus input */},
+                }}
+              />
+            ) : (
+              messages.map((message) => (
+                <div
+                  key={message._id}
+                  className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
+                >
+                  <div
+                    className={`flex items-start space-x-3 max-w-[80%] ${message.sender === "user" ? "flex-row-reverse space-x-reverse" : ""}`}
+                  >
+                    <div
+                      className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        message.sender === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-gradient-to-r from-primary to-primary/60 text-white"
+                      }`}
+                    >
+                      {message.sender === "user" ? (
+                        <User className="h-4 w-4" />
+                      ) : (
+                        <Brain className="h-4 w-4" />
+                      )}
+                    </div>
+                    <div
+                      className={`rounded-lg p-3 ${
+                        message.sender === "user"
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted"
+                      }`}
+                    >
+                      <p className="text-sm whitespace-pre-wrap">
+                        {message.content}
+                      </p>
+                      <p className="text-xs opacity-70 mt-1">
+                        {new Date(message.timestamp).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
 
           <div className="border-t p-4">
@@ -139,8 +185,8 @@ export default function ChatPage() {
                   rows={1}
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault()
-                      handleSendMessage()
+                      e.preventDefault();
+                      handleSendMessage();
                     }
                   }}
                 />
@@ -150,7 +196,11 @@ export default function ChatPage() {
                 size="icon"
                 onClick={toggleRecording}
               >
-                {isRecording ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                {isRecording ? (
+                  <MicOff className="h-4 w-4" />
+                ) : (
+                  <Mic className="h-4 w-4" />
+                )}
               </Button>
               <Button onClick={handleSendMessage}>
                 <Send className="h-4 w-4" />
@@ -170,7 +220,8 @@ export default function ChatPage() {
                 <div className="p-3 bg-muted rounded-lg">
                   <p className="font-medium">Related Topics</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Based on your conversation, you might be interested in Deep Learning and Neural Networks
+                    Based on your conversation, you might be interested in Deep
+                    Learning and Neural Networks
                   </p>
                 </div>
                 <div className="p-3 bg-muted rounded-lg">
@@ -213,7 +264,9 @@ export default function ChatPage() {
                   <span className="font-medium">8</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Documents referenced</span>
+                  <span className="text-muted-foreground">
+                    Documents referenced
+                  </span>
                   <span className="font-medium">5</span>
                 </div>
               </div>
@@ -222,5 +275,5 @@ export default function ChatPage() {
         </div>
       </div>
     </Layout>
-  )
+  );
 }
