@@ -1,14 +1,15 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Layout } from "@/components/layout/layout"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { 
-  User, 
-  Bell, 
-  Shield, 
-  Database, 
+import { useState, useEffect } from "react";
+import { Layout } from "@/components/layout/layout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { api } from "@/lib/api";
+import {
+  User,
+  Bell,
+  Shield,
+  Database,
   Palette,
   Globe,
   Brain,
@@ -19,33 +20,39 @@ import {
   Sun,
   Lock,
   Smartphone,
-  Laptop
-} from "lucide-react"
+  Laptop,
+  AlertCircle,
+  CheckCircle,
+} from "lucide-react";
 
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState("profile")
-  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [activeTab, setActiveTab] = useState("profile");
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [notifications, setNotifications] = useState({
     email: true,
     push: false,
     weekly: true,
-    aiInsights: true
-  })
+    aiInsights: true,
+  });
   const [privacy, setPrivacy] = useState({
     dataCollection: true,
     analytics: false,
     personalization: true,
-    publicProfile: false
-  })
-  
+    publicProfile: false,
+  });
+
   // Profile form state
   const [profileData, setProfileData] = useState({
     firstName: "John",
     lastName: "Doe",
     email: "john.doe@example.com",
-    bio: "Passionate about learning and knowledge management"
-  })
-  
+    bio: "Passionate about learning and knowledge management",
+  });
+
   // Settings form state
   const [settingsData, setSettingsData] = useState({
     digestFrequency: "Weekly",
@@ -58,8 +65,61 @@ export default function SettingsPage() {
     adaptiveLearning: true,
     accentColor: "blue",
     fontSize: "Medium",
-    compactMode: false
-  })
+    compactMode: false,
+  });
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
+
+  const fetchSettings = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.getSettings();
+      if (response.settings) {
+        setSettingsData(response.settings);
+        setNotifications(response.settings.notifications || notifications);
+        setPrivacy(response.settings.privacy || privacy);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load settings");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveProfile = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      await api.updateProfile(profileData);
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save profile");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    try {
+      setSaving(true);
+      setError(null);
+      await api.updateSettings({
+        ...settingsData,
+        notifications,
+        privacy,
+      });
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const tabs = [
     { id: "profile", label: "Profile", icon: User },
@@ -67,11 +127,23 @@ export default function SettingsPage() {
     { id: "privacy", label: "Privacy & Security", icon: Shield },
     { id: "ai", label: "AI Settings", icon: Brain },
     { id: "data", label: "Data Management", icon: Database },
-    { id: "appearance", label: "Appearance", icon: Palette }
-  ]
+    { id: "appearance", label: "Appearance", icon: Palette },
+  ];
 
   const renderProfileSettings = () => (
     <div className="space-y-6">
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+          <AlertCircle className="h-4 w-4 text-red-500" />
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+      {success && (
+        <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2">
+          <CheckCircle className="h-4 w-4 text-green-500" />
+          <p className="text-sm text-green-700">Settings saved successfully</p>
+        </div>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Personal Information</CardTitle>
@@ -83,7 +155,12 @@ export default function SettingsPage() {
               <input
                 type="text"
                 value={profileData.firstName}
-                onChange={(e) => setProfileData(prev => ({ ...prev, firstName: e.target.value }))}
+                onChange={(e) =>
+                  setProfileData((prev) => ({
+                    ...prev,
+                    firstName: e.target.value,
+                  }))
+                }
                 className="w-full mt-1 p-2 border border-border rounded-lg bg-background"
               />
             </div>
@@ -92,7 +169,12 @@ export default function SettingsPage() {
               <input
                 type="text"
                 value={profileData.lastName}
-                onChange={(e) => setProfileData(prev => ({ ...prev, lastName: e.target.value }))}
+                onChange={(e) =>
+                  setProfileData((prev) => ({
+                    ...prev,
+                    lastName: e.target.value,
+                  }))
+                }
                 className="w-full mt-1 p-2 border border-border rounded-lg bg-background"
               />
             </div>
@@ -102,7 +184,9 @@ export default function SettingsPage() {
             <input
               type="email"
               value={profileData.email}
-              onChange={(e) => setProfileData(prev => ({ ...prev, email: e.target.value }))}
+              onChange={(e) =>
+                setProfileData((prev) => ({ ...prev, email: e.target.value }))
+              }
               className="w-full mt-1 p-2 border border-border rounded-lg bg-background"
             />
           </div>
@@ -111,11 +195,15 @@ export default function SettingsPage() {
             <textarea
               rows={3}
               value={profileData.bio}
-              onChange={(e) => setProfileData(prev => ({ ...prev, bio: e.target.value }))}
+              onChange={(e) =>
+                setProfileData((prev) => ({ ...prev, bio: e.target.value }))
+              }
               className="w-full mt-1 p-2 border border-border rounded-lg bg-background resize-none"
             />
           </div>
-          <Button>Save Changes</Button>
+          <Button onClick={handleSaveProfile} disabled={saving}>
+            {saving ? "Saving..." : "Save Changes"}
+          </Button>
         </CardContent>
       </Card>
 
@@ -130,29 +218,49 @@ export default function SettingsPage() {
                 <Laptop className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="font-medium">MacBook Pro</p>
-                  <p className="text-sm text-muted-foreground">Current device • Last active now</p>
+                  <p className="text-sm text-muted-foreground">
+                    Current device • Last active now
+                  </p>
                 </div>
               </div>
-              <Button variant="outline" size="sm">Current</Button>
+              <Button variant="outline" size="sm">
+                Current
+              </Button>
             </div>
             <div className="flex items-center justify-between p-3 border rounded-lg">
               <div className="flex items-center space-x-3">
                 <Smartphone className="h-5 w-5 text-muted-foreground" />
                 <div>
                   <p className="font-medium">iPhone 14</p>
-                  <p className="text-sm text-muted-foreground">Last active 2 hours ago</p>
+                  <p className="text-sm text-muted-foreground">
+                    Last active 2 hours ago
+                  </p>
                 </div>
               </div>
-              <Button variant="outline" size="sm">Revoke</Button>
+              <Button variant="outline" size="sm">
+                Revoke
+              </Button>
             </div>
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 
   const renderNotificationSettings = () => (
     <div className="space-y-6">
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+          <AlertCircle className="h-4 w-4 text-red-500" />
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+      {success && (
+        <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2">
+          <CheckCircle className="h-4 w-4 text-green-500" />
+          <p className="text-sm text-green-700">Settings saved successfully</p>
+        </div>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Notification Preferences</CardTitle>
@@ -161,48 +269,67 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Email Notifications</p>
-              <p className="text-sm text-muted-foreground">Receive updates via email</p>
+              <p className="text-sm text-muted-foreground">
+                Receive updates via email
+              </p>
             </div>
             <input
               type="checkbox"
               checked={notifications.email}
-              onChange={(e) => setNotifications({...notifications, email: e.target.checked})}
+              onChange={(e) =>
+                setNotifications({ ...notifications, email: e.target.checked })
+              }
               className="h-4 w-4"
             />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Push Notifications</p>
-              <p className="text-sm text-muted-foreground">Browser push notifications</p>
+              <p className="text-sm text-muted-foreground">
+                Browser push notifications
+              </p>
             </div>
             <input
               type="checkbox"
               checked={notifications.push}
-              onChange={(e) => setNotifications({...notifications, push: e.target.checked})}
+              onChange={(e) =>
+                setNotifications({ ...notifications, push: e.target.checked })
+              }
               className="h-4 w-4"
             />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Weekly Summary</p>
-              <p className="text-sm text-muted-foreground">Get weekly knowledge insights</p>
+              <p className="text-sm text-muted-foreground">
+                Get weekly knowledge insights
+              </p>
             </div>
             <input
               type="checkbox"
               checked={notifications.weekly}
-              onChange={(e) => setNotifications({...notifications, weekly: e.target.checked})}
+              onChange={(e) =>
+                setNotifications({ ...notifications, weekly: e.target.checked })
+              }
               className="h-4 w-4"
             />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">AI Insights</p>
-              <p className="text-sm text-muted-foreground">Personalized learning recommendations</p>
+              <p className="text-sm text-muted-foreground">
+                Personalized learning recommendations
+              </p>
             </div>
             <input
               type="checkbox"
               checked={notifications.aiInsights}
-              onChange={(e) => setNotifications({...notifications, aiInsights: e.target.checked})}
+              onChange={(e) =>
+                setNotifications({
+                  ...notifications,
+                  aiInsights: e.target.checked,
+                })
+              }
               className="h-4 w-4"
             />
           </div>
@@ -214,9 +341,14 @@ export default function SettingsPage() {
           <CardTitle>Digest Frequency</CardTitle>
         </CardHeader>
         <CardContent>
-          <select 
+          <select
             value={settingsData.digestFrequency}
-            onChange={(e) => setSettingsData(prev => ({ ...prev, digestFrequency: e.target.value }))}
+            onChange={(e) =>
+              setSettingsData((prev) => ({
+                ...prev,
+                digestFrequency: e.target.value,
+              }))
+            }
             className="w-full p-2 border border-border rounded-lg bg-background"
           >
             <option>Daily</option>
@@ -227,11 +359,27 @@ export default function SettingsPage() {
           </select>
         </CardContent>
       </Card>
+
+      <Button onClick={handleSaveSettings} disabled={saving}>
+        {saving ? "Saving..." : "Save Changes"}
+      </Button>
     </div>
-  )
+  );
 
   const renderPrivacySettings = () => (
     <div className="space-y-6">
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+          <AlertCircle className="h-4 w-4 text-red-500" />
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+      {success && (
+        <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2">
+          <CheckCircle className="h-4 w-4 text-green-500" />
+          <p className="text-sm text-green-700">Settings saved successfully</p>
+        </div>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>Data Privacy</CardTitle>
@@ -240,48 +388,64 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Data Collection</p>
-              <p className="text-sm text-muted-foreground">Allow collection of usage data</p>
+              <p className="text-sm text-muted-foreground">
+                Allow collection of usage data
+              </p>
             </div>
             <input
               type="checkbox"
               checked={privacy.dataCollection}
-              onChange={(e) => setPrivacy({...privacy, dataCollection: e.target.checked})}
+              onChange={(e) =>
+                setPrivacy({ ...privacy, dataCollection: e.target.checked })
+              }
               className="h-4 w-4"
             />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Analytics</p>
-              <p className="text-sm text-muted-foreground">Help improve the service</p>
+              <p className="text-sm text-muted-foreground">
+                Help improve the service
+              </p>
             </div>
             <input
               type="checkbox"
               checked={privacy.analytics}
-              onChange={(e) => setPrivacy({...privacy, analytics: e.target.checked})}
+              onChange={(e) =>
+                setPrivacy({ ...privacy, analytics: e.target.checked })
+              }
               className="h-4 w-4"
             />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Personalization</p>
-              <p className="text-sm text-muted-foreground">Customize experience based on usage</p>
+              <p className="text-sm text-muted-foreground">
+                Customize experience based on usage
+              </p>
             </div>
             <input
               type="checkbox"
               checked={privacy.personalization}
-              onChange={(e) => setPrivacy({...privacy, personalization: e.target.checked})}
+              onChange={(e) =>
+                setPrivacy({ ...privacy, personalization: e.target.checked })
+              }
               className="h-4 w-4"
             />
           </div>
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Public Profile</p>
-              <p className="text-sm text-muted-foreground">Make profile visible to others</p>
+              <p className="text-sm text-muted-foreground">
+                Make profile visible to others
+              </p>
             </div>
             <input
               type="checkbox"
               checked={privacy.publicProfile}
-              onChange={(e) => setPrivacy({...privacy, publicProfile: e.target.checked})}
+              onChange={(e) =>
+                setPrivacy({ ...privacy, publicProfile: e.target.checked })
+              }
               className="h-4 w-4"
             />
           </div>
@@ -296,18 +460,27 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Two-Factor Authentication</p>
-              <p className="text-sm text-muted-foreground">Add an extra layer of security</p>
+              <p className="text-sm text-muted-foreground">
+                Add an extra layer of security
+              </p>
             </div>
             <Button variant="outline">Enable</Button>
           </div>
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Session Timeout</p>
-              <p className="text-sm text-muted-foreground">Auto-logout after inactivity</p>
+              <p className="text-sm text-muted-foreground">
+                Auto-logout after inactivity
+              </p>
             </div>
-            <select 
+            <select
               value={settingsData.sessionTimeout}
-              onChange={(e) => setSettingsData(prev => ({ ...prev, sessionTimeout: e.target.value }))}
+              onChange={(e) =>
+                setSettingsData((prev) => ({
+                  ...prev,
+                  sessionTimeout: e.target.value,
+                }))
+              }
               className="p-2 border border-border rounded-lg bg-background"
             >
               <option>30 minutes</option>
@@ -322,11 +495,27 @@ export default function SettingsPage() {
           </Button>
         </CardContent>
       </Card>
+
+      <Button onClick={handleSaveSettings} disabled={saving}>
+        {saving ? "Saving..." : "Save Changes"}
+      </Button>
     </div>
-  )
+  );
 
   const renderAISettings = () => (
     <div className="space-y-6">
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+          <AlertCircle className="h-4 w-4 text-red-500" />
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+      {success && (
+        <div className="p-3 bg-green-50 border border-green-200 rounded-lg flex items-center space-x-2">
+          <CheckCircle className="h-4 w-4 text-green-500" />
+          <p className="text-sm text-green-700">Settings saved successfully</p>
+        </div>
+      )}
       <Card>
         <CardHeader>
           <CardTitle>AI Model Preferences</CardTitle>
@@ -334,9 +523,14 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div>
             <label className="text-sm font-medium">AI Model</label>
-            <select 
+            <select
               value={settingsData.aiModel}
-              onChange={(e) => setSettingsData(prev => ({ ...prev, aiModel: e.target.value }))}
+              onChange={(e) =>
+                setSettingsData((prev) => ({
+                  ...prev,
+                  aiModel: e.target.value,
+                }))
+              }
               className="w-full mt-1 p-2 border border-border rounded-lg bg-background"
             >
               <option>GPT-4 (Recommended)</option>
@@ -347,9 +541,14 @@ export default function SettingsPage() {
           </div>
           <div>
             <label className="text-sm font-medium">Response Style</label>
-            <select 
+            <select
               value={settingsData.responseStyle}
-              onChange={(e) => setSettingsData(prev => ({ ...prev, responseStyle: e.target.value }))}
+              onChange={(e) =>
+                setSettingsData((prev) => ({
+                  ...prev,
+                  responseStyle: e.target.value,
+                }))
+              }
               className="w-full mt-1 p-2 border border-border rounded-lg bg-background"
             >
               <option>Balanced</option>
@@ -360,9 +559,14 @@ export default function SettingsPage() {
           </div>
           <div>
             <label className="text-sm font-medium">Language</label>
-            <select 
+            <select
               value={settingsData.language}
-              onChange={(e) => setSettingsData(prev => ({ ...prev, language: e.target.value }))}
+              onChange={(e) =>
+                setSettingsData((prev) => ({
+                  ...prev,
+                  language: e.target.value,
+                }))
+              }
               className="w-full mt-1 p-2 border border-border rounded-lg bg-background"
             >
               <option>English</option>
@@ -382,9 +586,14 @@ export default function SettingsPage() {
         <CardContent className="space-y-4">
           <div>
             <label className="text-sm font-medium">Learning Pace</label>
-            <select 
+            <select
               value={settingsData.learningPace}
-              onChange={(e) => setSettingsData(prev => ({ ...prev, learningPace: e.target.value }))}
+              onChange={(e) =>
+                setSettingsData((prev) => ({
+                  ...prev,
+                  learningPace: e.target.value,
+                }))
+              }
               className="w-full mt-1 p-2 border border-border rounded-lg bg-background"
             >
               <option>Relaxed</option>
@@ -394,9 +603,14 @@ export default function SettingsPage() {
           </div>
           <div>
             <label className="text-sm font-medium">Difficulty Level</label>
-            <select 
+            <select
               value={settingsData.difficultyLevel}
-              onChange={(e) => setSettingsData(prev => ({ ...prev, difficultyLevel: e.target.value }))}
+              onChange={(e) =>
+                setSettingsData((prev) => ({
+                  ...prev,
+                  difficultyLevel: e.target.value,
+                }))
+              }
               className="w-full mt-1 p-2 border border-border rounded-lg bg-background"
             >
               <option>Beginner</option>
@@ -408,19 +622,30 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Adaptive Learning</p>
-              <p className="text-sm text-muted-foreground">AI adjusts to your learning style</p>
+              <p className="text-sm text-muted-foreground">
+                AI adjusts to your learning style
+              </p>
             </div>
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               checked={settingsData.adaptiveLearning}
-              onChange={(e) => setSettingsData(prev => ({ ...prev, adaptiveLearning: e.target.checked }))}
-              className="h-4 w-4" 
+              onChange={(e) =>
+                setSettingsData((prev) => ({
+                  ...prev,
+                  adaptiveLearning: e.target.checked,
+                }))
+              }
+              className="h-4 w-4"
             />
           </div>
         </CardContent>
       </Card>
+
+      <Button onClick={handleSaveSettings} disabled={saving}>
+        {saving ? "Saving..." : "Save Changes"}
+      </Button>
     </div>
-  )
+  );
 
   const renderDataManagement = () => (
     <div className="space-y-6">
@@ -480,7 +705,7 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 
   const renderAppearanceSettings = () => (
     <div className="space-y-6">
@@ -525,7 +750,14 @@ export default function SettingsPage() {
           <div>
             <label className="text-sm font-medium">Accent Color</label>
             <div className="grid grid-cols-6 gap-2 mt-2">
-              {["bg-blue-500", "bg-green-500", "bg-purple-500", "bg-orange-500", "bg-red-500", "bg-gray-500"].map((color) => (
+              {[
+                "bg-blue-500",
+                "bg-green-500",
+                "bg-purple-500",
+                "bg-orange-500",
+                "bg-red-500",
+                "bg-gray-500",
+              ].map((color) => (
                 <button
                   key={color}
                   className={`h-8 w-8 rounded-full ${color} border-2 border-background`}
@@ -535,9 +767,14 @@ export default function SettingsPage() {
           </div>
           <div>
             <label className="text-sm font-medium">Font Size</label>
-            <select 
+            <select
               value={settingsData.fontSize}
-              onChange={(e) => setSettingsData(prev => ({ ...prev, fontSize: e.target.value }))}
+              onChange={(e) =>
+                setSettingsData((prev) => ({
+                  ...prev,
+                  fontSize: e.target.value,
+                }))
+              }
               className="w-full mt-1 p-2 border border-border rounded-lg bg-background"
             >
               <option>Small</option>
@@ -549,31 +786,45 @@ export default function SettingsPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="font-medium">Compact Mode</p>
-              <p className="text-sm text-muted-foreground">Reduce spacing between elements</p>
+              <p className="text-sm text-muted-foreground">
+                Reduce spacing between elements
+              </p>
             </div>
-            <input 
-              type="checkbox" 
+            <input
+              type="checkbox"
               checked={settingsData.compactMode}
-              onChange={(e) => setSettingsData(prev => ({ ...prev, compactMode: e.target.checked }))}
-              className="h-4 w-4" 
+              onChange={(e) =>
+                setSettingsData((prev) => ({
+                  ...prev,
+                  compactMode: e.target.checked,
+                }))
+              }
+              className="h-4 w-4"
             />
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 
   const renderTabContent = () => {
     switch (activeTab) {
-      case "profile": return renderProfileSettings()
-      case "notifications": return renderNotificationSettings()
-      case "privacy": return renderPrivacySettings()
-      case "ai": return renderAISettings()
-      case "data": return renderDataManagement()
-      case "appearance": return renderAppearanceSettings()
-      default: return renderProfileSettings()
+      case "profile":
+        return renderProfileSettings();
+      case "notifications":
+        return renderNotificationSettings();
+      case "privacy":
+        return renderPrivacySettings();
+      case "ai":
+        return renderAISettings();
+      case "data":
+        return renderDataManagement();
+      case "appearance":
+        return renderAppearanceSettings();
+      default:
+        return renderProfileSettings();
     }
-  }
+  };
 
   return (
     <Layout>
@@ -609,11 +860,9 @@ export default function SettingsPage() {
             </Card>
           </div>
 
-          <div className="lg:col-span-3">
-            {renderTabContent()}
-          </div>
+          <div className="lg:col-span-3">{renderTabContent()}</div>
         </div>
       </div>
     </Layout>
-  )
+  );
 }
