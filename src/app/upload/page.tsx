@@ -1,15 +1,16 @@
-"use client"
+"use client";
 
-import { useState, useCallback } from "react"
-import { useDropzone } from "react-dropzone"
-import { Layout } from "@/components/layout/layout"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { 
-  Upload, 
-  FileText, 
-  FileAudio, 
-  FileVideo, 
+import { useState, useCallback } from "react";
+import { useDropzone } from "react-dropzone";
+import { Layout } from "@/components/layout/layout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { api } from "@/lib/api";
+import {
+  Upload,
+  FileText,
+  FileAudio,
+  FileVideo,
   Image,
   X,
   CheckCircle,
@@ -19,136 +20,193 @@ import {
   Mic,
   Video,
   Camera,
-  Link
-} from "lucide-react"
+  Link,
+} from "lucide-react";
 
 interface UploadedFile {
-  id: string
-  file: File
-  name: string
-  size: string
-  type: string
-  status: "uploading" | "processing" | "completed" | "error"
-  progress: number
-  extractedContent?: string
+  _id: string;
+  file: File;
+  name: string;
+  size: string;
+  type: string;
+  status: "uploading" | "processing" | "completed" | "error";
+  progress: number;
+  extractedContent?: string;
+  error?: string;
 }
 
 const fileTypes = [
-  { type: "document", icon: FileText, extensions: ["PDF", "DOC", "DOCX", "TXT", "MD"], color: "text-blue-500" },
-  { type: "audio", icon: FileAudio, extensions: ["MP3", "WAV", "M4A", "AAC"], color: "text-green-500" },
-  { type: "video", icon: FileVideo, extensions: ["MP4", "AVI", "MOV", "MKV"], color: "text-purple-500" },
-  { type: "image", icon: Image, extensions: ["JPG", "PNG", "GIF", "SVG"], color: "text-orange-500" }
-]
+  {
+    type: "document",
+    icon: FileText,
+    extensions: ["PDF", "DOC", "DOCX", "TXT", "MD"],
+    color: "text-blue-500",
+  },
+  {
+    type: "audio",
+    icon: FileAudio,
+    extensions: ["MP3", "WAV", "M4A", "AAC"],
+    color: "text-green-500",
+  },
+  {
+    type: "video",
+    icon: FileVideo,
+    extensions: ["MP4", "AVI", "MOV", "MKV"],
+    color: "text-purple-500",
+  },
+  {
+    type: "image",
+    icon: Image,
+    extensions: ["JPG", "PNG", "GIF", "SVG"],
+    color: "text-orange-500",
+  },
+];
+
+const formatFileSize = (bytes: number) => {
+  if (bytes === 0) return "0 Bytes";
+  const k = 1024;
+  const sizes = ["Bytes", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+};
+
+const getFileType = (filename: string) => {
+  const ext = filename.split(".").pop()?.toLowerCase();
+  if (["pdf", "doc", "docx", "txt", "md"].includes(ext || ""))
+    return "document";
+  if (["mp3", "wav", "m4a", "aac"].includes(ext || "")) return "audio";
+  if (["mp4", "avi", "mov", "mkv"].includes(ext || "")) return "video";
+  if (["jpg", "jpeg", "png", "gif", "svg"].includes(ext || ""))
+    return "image";
+  return "unknown";
+};
 
 export default function UploadPage() {
-  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
-  const [isRecording, setIsRecording] = useState(false)
-  const [recordingTime, setRecordingTime] = useState(0)
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingTime, setRecordingTime] = useState(0);
 
-  const onDrop = useCallback((acceptedFiles: File[]) => {
-    const newFiles = acceptedFiles.map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    const newFiles = acceptedFiles.map((file) => ({
+      _id: Math.random().toString(36).substr(2, 9),
       file,
       name: file.name,
       size: formatFileSize(file.size),
       type: getFileType(file.name),
       status: "uploading" as const,
-      progress: 0
-    }))
+      progress: 0,
+    }));
 
-    setUploadedFiles(prev => [...prev, ...newFiles])
-    
-    // Simulate upload and processing
-    newFiles.forEach((uploadedFile, index) => {
-      setTimeout(() => {
-        setUploadedFiles(prev => prev.map(f => 
-          f.id === uploadedFile.id 
-            ? { ...f, status: "processing", progress: 50 }
-            : f
-        ))
-      }, 1000 + index * 500)
+    setUploadedFiles((prev) => [...prev, ...newFiles]);
 
-      setTimeout(() => {
-        setUploadedFiles(prev => prev.map(f => 
-          f.id === uploadedFile.id 
-            ? { 
-                ...f, 
-                status: "completed", 
-                progress: 100,
-                extractedContent: "AI has extracted key concepts and insights from this document..."
-              }
-            : f
-        ))
-      }, 3000 + index * 500)
-    })
-  }, [])
+    // Upload files using API
+    for (const uploadedFile of newFiles) {
+      try {
+        setUploadedFiles((prev) =>
+          prev.map((f) =>
+            f._id === uploadedFile._id
+              ? { ...f, status: "uploading", progress: 25 }
+              : f,
+          ),
+        );
+
+        const response = await api.uploadFile(uploadedFile.file, uploadedFile.name);
+
+        setUploadedFiles((prev) =>
+          prev.map((f) =>
+            f._id === uploadedFile._id
+              ? { ...f, status: "processing", progress: 50 }
+              : f,
+          ),
+        );
+
+        // Simulate processing
+        setTimeout(() => {
+          setUploadedFiles((prev) =>
+            prev.map((f) =>
+              f._id === uploadedFile._id
+                ? {
+                    ...f,
+                    status: "completed",
+                    progress: 100,
+                    extractedContent:
+                      "AI has extracted key concepts and insights from this document...",
+                  }
+                : f,
+          ),
+        );
+        }, 2000);
+      } catch (err) {
+        setUploadedFiles((prev) =>
+          prev.map((f) =>
+            f._id === uploadedFile._id
+              ? {
+                  ...f,
+                  status: "error",
+                  error: err instanceof Error ? err.message : "Upload failed",
+                }
+                : f,
+          ),
+        );
+      }
+    }
+  }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'application/pdf': ['.pdf'],
-      'application/msword': ['.doc'],
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-      'text/plain': ['.txt'],
-      'text/markdown': ['.md'],
-      'audio/*': ['.mp3', '.wav', '.m4a', '.aac'],
-      'video/*': ['.mp4', '.avi', '.mov', '.mkv'],
-      'image/*': ['.jpg', '.jpeg', '.png', '.gif', '.svg']
-    }
-  })
-
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes'
-    const k = 1024
-    const sizes = ['Bytes', 'KB', 'MB', 'GB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-  }
-
-  const getFileType = (filename: string) => {
-    const ext = filename.split('.').pop()?.toLowerCase()
-    if (['pdf', 'doc', 'docx', 'txt', 'md'].includes(ext || '')) return 'document'
-    if (['mp3', 'wav', 'm4a', 'aac'].includes(ext || '')) return 'audio'
-    if (['mp4', 'avi', 'mov', 'mkv'].includes(ext || '')) return 'video'
-    if (['jpg', 'jpeg', 'png', 'gif', 'svg'].includes(ext || '')) return 'image'
-    return 'unknown'
-  }
+      "application/pdf": [".pdf"],
+      "application/msword": [".doc"],
+      "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
+        [".docx"],
+      "text/plain": [".txt"],
+      "text/markdown": [".md"],
+      "audio/*": [".mp3", ".wav", ".m4a", ".aac"],
+      "video/*": [".mp4", ".avi", ".mov", ".mkv"],
+      "image/*": [".jpg", ".jpeg", ".png", ".gif", ".svg"],
+    },
+  });
 
   const removeFile = (id: string) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== id))
-  }
+    setUploadedFiles((prev) => prev.filter((f) => f._id !== id));
+  };
 
   const toggleRecording = () => {
     if (!isRecording) {
-      setIsRecording(true)
-      setRecordingTime(0)
+      setIsRecording(true);
+      setRecordingTime(0);
       // Start recording logic here
       const interval = setInterval(() => {
-        setRecordingTime(prev => {
+        setRecordingTime((prev) => {
           if (prev >= 59) {
-            clearInterval(interval)
-            setIsRecording(false)
-            return 0
+            clearInterval(interval);
+            setIsRecording(false);
+            return 0;
           }
-          return prev + 1
-        })
-      }, 1000)
+          return prev + 1;
+        });
+      }, 1000);
     } else {
-      setIsRecording(false)
-      setRecordingTime(0)
+      setIsRecording(false);
+      setRecordingTime(0);
       // Stop recording logic here
     }
-  }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case "uploading": return <Clock className="h-4 w-4 text-blue-500" />
-      case "processing": return <Brain className="h-4 w-4 text-yellow-500" />
-      case "completed": return <CheckCircle className="h-4 w-4 text-green-500" />
-      case "error": return <AlertCircle className="h-4 w-4 text-red-500" />
-      default: return null
+      case "uploading":
+        return <Clock className="h-4 w-4 text-blue-500" />;
+      case "processing":
+        return <Brain className="h-4 w-4 text-yellow-500" />;
+      case "completed":
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case "error":
+        return <AlertCircle className="h-4 w-4 text-red-500" />;
+      default:
+        return null;
     }
-  }
+  };
 
   return (
     <Layout>
@@ -170,15 +228,17 @@ export default function UploadPage() {
                 <div
                   {...getRootProps()}
                   className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                    isDragActive 
-                      ? "border-primary bg-primary/5" 
+                    isDragActive
+                      ? "border-primary bg-primary/5"
                       : "border-muted-foreground/25 hover:border-primary hover:bg-primary/5"
                   }`}
                 >
                   <input {...getInputProps()} />
                   <Upload className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
                   {isDragActive ? (
-                    <p className="text-lg font-medium">Drop the files here...</p>
+                    <p className="text-lg font-medium">
+                      Drop the files here...
+                    </p>
                   ) : (
                     <div>
                       <p className="text-lg font-medium mb-2">
@@ -204,9 +264,13 @@ export default function UploadPage() {
                     className="h-20 flex flex-col items-center justify-center space-y-2"
                     onClick={toggleRecording}
                   >
-                    <Mic className={`h-6 w-6 ${isRecording ? "text-red-500" : ""}`} />
+                    <Mic
+                      className={`h-6 w-6 ${isRecording ? "text-red-500" : ""}`}
+                    />
                     <span className="text-sm">
-                      {isRecording ? `Recording ${recordingTime}s` : "Voice Recording"}
+                      {isRecording
+                        ? `Recording ${recordingTime}s`
+                        : "Voice Recording"}
                     </span>
                   </Button>
                   <Button
@@ -242,12 +306,17 @@ export default function UploadPage() {
                 <CardContent>
                   <div className="space-y-3">
                     {uploadedFiles.map((uploadedFile) => (
-                      <div key={uploadedFile.id} className="flex items-center space-x-3 p-3 border rounded-lg">
+                      <div
+                        key={uploadedFile._id}
+                        className="flex items-center space-x-3 p-3 border rounded-lg"
+                      >
                         <div className="flex-shrink-0">
                           {getStatusIcon(uploadedFile.status)}
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{uploadedFile.name}</p>
+                          <p className="text-sm font-medium truncate">
+                            {uploadedFile.name}
+                          </p>
                           <div className="flex items-center space-x-4 text-xs text-muted-foreground">
                             <span>{uploadedFile.size}</span>
                             <span>{uploadedFile.type}</span>
@@ -255,7 +324,7 @@ export default function UploadPage() {
                           </div>
                           {uploadedFile.status === "uploading" && (
                             <div className="mt-2 h-1 bg-muted rounded-full overflow-hidden">
-                              <div 
+                              <div
                                 className="h-full bg-primary rounded-full transition-all duration-300"
                                 style={{ width: `${uploadedFile.progress}%` }}
                               />
@@ -270,7 +339,7 @@ export default function UploadPage() {
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeFile(uploadedFile.id)}
+                          onClick={() => removeFile(uploadedFile._id)}
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -290,10 +359,15 @@ export default function UploadPage() {
               <CardContent>
                 <div className="space-y-3">
                   {fileTypes.map((fileType) => (
-                    <div key={fileType.type} className="flex items-center space-x-3">
+                    <div
+                      key={fileType.type}
+                      className="flex items-center space-x-3"
+                    >
                       <fileType.icon className={`h-5 w-5 ${fileType.color}`} />
                       <div className="flex-1">
-                        <p className="text-sm font-medium capitalize">{fileType.type}</p>
+                        <p className="text-sm font-medium capitalize">
+                          {fileType.type}
+                        </p>
                         <p className="text-xs text-muted-foreground">
                           {fileType.extensions.join(", ")}
                         </p>
@@ -377,5 +451,5 @@ export default function UploadPage() {
         </div>
       </div>
     </Layout>
-  )
+  );
 }
