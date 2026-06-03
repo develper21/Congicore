@@ -1,51 +1,65 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { 
-  FileText, 
-  MessageSquare, 
-  Network, 
+import { useState, useEffect } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
+import { api } from "@/lib/api";
+import {
+  FileText,
+  MessageSquare,
+  Network,
   Clock,
-  ArrowRight
-} from "lucide-react"
+  ArrowRight,
+  Loader2,
+  Activity,
+} from "lucide-react";
 
-const activities = [
-  {
-    id: 1,
-    type: "document",
-    title: "Machine Learning Basics.pdf",
-    description: "Processed and indexed 15 concepts",
-    time: "2 hours ago",
-    icon: FileText
-  },
-  {
-    id: 2,
-    type: "chat",
-    title: "AI Conversation",
-    description: "Discussed neural networks and deep learning",
-    time: "4 hours ago",
-    icon: MessageSquare
-  },
-  {
-    id: 3,
-    type: "graph",
-    title: "Knowledge Graph Updated",
-    description: "Added 8 new connections between concepts",
-    time: "6 hours ago",
-    icon: Network
-  },
-  {
-    id: 4,
-    type: "memory",
-    title: "Memory Review",
-    description: "Reviewed 12 flashcards for retention",
-    time: "1 day ago",
-    icon: Clock
+interface Activity {
+  _id: string;
+  title: string;
+  description: string;
+  type: "document" | "chat" | "graph" | "memory";
+  time: string;
+}
+
+const getActivityIcon = (type: string) => {
+  switch (type) {
+    case "document":
+      return FileText;
+    case "chat":
+      return MessageSquare;
+    case "graph":
+      return Network;
+    case "memory":
+      return Clock;
+    default:
+      return Activity;
   }
-]
+};
 
 export function RecentActivity() {
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchActivities();
+  }, []);
+
+  const fetchActivities = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await api.getStats();
+      setActivities(response.stats?.recentActivities || []);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch activities");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -56,29 +70,51 @@ export function RecentActivity() {
         </Button>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {activities.map((activity) => (
-            <div key={activity.id} className="flex items-start space-x-3">
-              <div className="flex-shrink-0">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
-                  <activity.icon className="h-5 w-5 text-muted-foreground" />
+        {loading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : error ? (
+          <div className="text-center py-8">
+            <p className="text-red-500 text-sm mb-2">{error}</p>
+            <Button variant="ghost" size="sm" onClick={fetchActivities}>
+              Retry
+            </Button>
+          </div>
+        ) : activities.length === 0 ? (
+          <EmptyState
+            icon={Activity}
+            title="No recent activity"
+            description="Start using the platform to see your activity here"
+          />
+        ) : (
+          <div className="space-y-4">
+            {activities.map((activity) => {
+              const Icon = getActivityIcon(activity.type);
+              return (
+                <div key={activity._id} className="flex items-start space-x-3">
+                  <div className="flex-shrink-0">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted">
+                      <Icon className="h-5 w-5 text-muted-foreground" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium leading-none">
+                      {activity.title}
+                    </p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      {activity.description}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(activity.time).toLocaleString()}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium leading-none">
-                  {activity.title}
-                </p>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {activity.description}
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {activity.time}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </CardContent>
     </Card>
-  )
+  );
 }

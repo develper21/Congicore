@@ -1,28 +1,28 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { LucideIcon } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface StatsCardProps {
-  title: string
-  value: string | number
+  title: string;
+  value: string | number;
   change?: {
-    value: string
-    trend: "up" | "down" | "neutral"
-  }
-  icon: LucideIcon
-  description?: string
-  className?: string
+    value: string;
+    trend: "up" | "down" | "neutral";
+  };
+  icon: LucideIcon;
+  description?: string;
+  className?: string;
 }
 
-export function StatsCard({ 
-  title, 
-  value, 
-  change, 
-  icon: Icon, 
+export function StatsCard({
+  title,
+  value,
+  change,
+  icon: Icon,
   description,
-  className 
+  className,
 }: StatsCardProps) {
   return (
     <Card className={cn("relative overflow-hidden", className)}>
@@ -38,7 +38,7 @@ export function StatsCard({
               className={cn(
                 "inline-flex items-center",
                 change.trend === "up" && "text-green-600",
-                change.trend === "down" && "text-red-600"
+                change.trend === "down" && "text-red-600",
               )}
             >
               {change.value}
@@ -49,5 +49,5 @@ export function StatsCard({
       </CardContent>
       <div className="absolute top-0 right-0 -mt-4 -mr-4 h-16 w-16 rounded-full bg-gradient-to-br from-primary/10 to-transparent" />
     </Card>
-  )
+  );
 }
