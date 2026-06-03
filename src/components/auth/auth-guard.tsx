@@ -1,33 +1,33 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
-import { Brain } from "lucide-react"
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { Brain } from "lucide-react";
 
 interface AuthGuardProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 export function AuthGuard({ children }: AuthGuardProps) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
-  const router = useRouter()
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
     // Check if user is authenticated (in real app, check token/session)
     const checkAuth = () => {
-      const token = localStorage.getItem("auth-token")
+      const token = localStorage.getItem("auth-token");
       if (token) {
-        setIsAuthenticated(true)
+        setIsAuthenticated(true);
       } else {
-        setIsAuthenticated(false)
-        router.push("/auth/login")
+        setIsAuthenticated(false);
+        router.push("/auth/login");
       }
-      setIsLoading(false)
-    }
+      setIsLoading(false);
+    };
 
-    checkAuth()
-  }, [router])
+    checkAuth();
+  }, [router]);
 
   if (isLoading) {
     return (
@@ -37,12 +37,12 @@ export function AuthGuard({ children }: AuthGuardProps) {
           <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (!isAuthenticated) {
-    return null // Will redirect to login
+    return null; // Will redirect to login
   }
 
-  return <>{children}</>
+  return <>{children}</>;
 }

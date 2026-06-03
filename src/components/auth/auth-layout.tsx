@@ -1,13 +1,13 @@
-"use client"
+"use client";
 
-import { ReactNode } from "react"
-import Link from "next/link"
-import { Brain } from "lucide-react"
+import { ReactNode } from "react";
+import Link from "next/link";
+import { Brain } from "lucide-react";
 
 interface AuthLayoutProps {
-  children: ReactNode
-  title?: string
-  subtitle?: string
+  children: ReactNode;
+  title?: string;
+  subtitle?: string;
 }
 
 export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
@@ -25,5 +25,5 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
         {children}
       </div>
     </div>
-  )
+  );
 }
