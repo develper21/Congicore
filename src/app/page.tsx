@@ -1,19 +1,18 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { 
-  Brain, 
-  FileText, 
-  MessageSquare, 
-  Network, 
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
+import {
+  Brain,
+  FileText,
+  MessageSquare,
+  Network,
   Clock,
   ArrowRight,
   Shield,
   Zap,
-  Globe
-} from "lucide-react"
+} from "lucide-react";
 
 export default function LandingPage() {
   return (
@@ -46,7 +45,9 @@ export default function LandingPage() {
             <span className="text-primary"> Second Brain</span>
           </h1>
           <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-            Transform how you learn and remember. Build a lifelong knowledge base that evolves with you, powered by intelligent AI that understands your unique learning style.
+            Transform how you learn and remember. Build a lifelong knowledge
+            base that evolves with you, powered by intelligent AI that
+            understands your unique learning style.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/auth/register">
@@ -72,17 +73,19 @@ export default function LandingPage() {
               Everything You Need to Master Knowledge
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Powerful features designed to help you learn faster, remember longer, and connect ideas better.
+              Powerful features designed to help you learn faster, remember
+              longer, and connect ideas better.
             </p>
           </div>
-          
+
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             <Card className="text-center p-6">
               <FileText className="h-12 w-12 text-primary mx-auto mb-4" />
               <CardTitle className="mb-2">Smart Document Processing</CardTitle>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Upload PDFs, audio, video and more. AI extracts key concepts and builds connections automatically.
+                  Upload PDFs, audio, video and more. AI extracts key concepts
+                  and builds connections automatically.
                 </p>
               </CardContent>
             </Card>
@@ -92,17 +95,21 @@ export default function LandingPage() {
               <CardTitle className="mb-2">AI Conversational Learning</CardTitle>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Chat with your knowledge base. Ask questions, get summaries, and explore connections naturally.
+                  Chat with your knowledge base. Ask questions, get summaries,
+                  and explore connections naturally.
                 </p>
               </CardContent>
             </Card>
 
             <Card className="text-center p-6">
               <Network className="h-12 w-12 text-primary mx-auto mb-4" />
-              <CardTitle className="mb-2">Knowledge Graph Visualization</CardTitle>
+              <CardTitle className="mb-2">
+                Knowledge Graph Visualization
+              </CardTitle>
               <CardContent>
                 <p className="text-muted-foreground">
-                  See how your ideas connect. Interactive graphs reveal patterns and insights you might miss.
+                  See how your ideas connect. Interactive graphs reveal patterns
+                  and insights you might miss.
                 </p>
               </CardContent>
             </Card>
@@ -112,7 +119,8 @@ export default function LandingPage() {
               <CardTitle className="mb-2">Spaced Repetition</CardTitle>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Science-backed memory system. Review at the perfect time for maximum retention.
+                  Science-backed memory system. Review at the perfect time for
+                  maximum retention.
                 </p>
               </CardContent>
             </Card>
@@ -122,7 +130,8 @@ export default function LandingPage() {
               <CardTitle className="mb-2">Predictive Insights</CardTitle>
               <CardContent>
                 <p className="text-muted-foreground">
-                  AI learns your patterns and suggests what to review next, keeping you ahead of the curve.
+                  AI learns your patterns and suggests what to review next,
+                  keeping you ahead of the curve.
                 </p>
               </CardContent>
             </Card>
@@ -132,7 +141,8 @@ export default function LandingPage() {
               <CardTitle className="mb-2">Privacy-First Design</CardTitle>
               <CardContent>
                 <p className="text-muted-foreground">
-                  Your knowledge stays yours. Optional on-device processing keeps your data private and secure.
+                  Your knowledge stays yours. Optional on-device processing
+                  keeps your data private and secure.
                 </p>
               </CardContent>
             </Card>
@@ -147,7 +157,8 @@ export default function LandingPage() {
             Ready to Transform Your Learning?
           </h2>
           <p className="text-xl text-muted-foreground mb-8">
-            Join thousands of learners who've already built their AI knowledge twins.
+            Join thousands of learners who&apos;ve already built their AI
+            knowledge twins.
           </p>
           <Link href="/auth/register">
             <Button size="lg" className="text-lg px-8 py-3">
@@ -173,5 +184,5 @@ export default function LandingPage() {
         </div>
       </footer>
     </div>
-  )
+  );
 }
