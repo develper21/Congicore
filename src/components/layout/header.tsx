@@ -1,21 +1,20 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { 
-  Search, 
-  Bell, 
-  User, 
-  Moon, 
-  Sun,
+import { useState, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { api } from "@/lib/api";
+import {
+  Search,
+  Bell,
+  User,
   Settings,
   LogOut,
   CreditCard,
   HelpCircle,
   CheckCircle,
   AlertCircle,
-  Info
-} from "lucide-react"
+  Info,
+} from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -23,53 +22,58 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui/dropdown-menu";
+
+interface Notification {
+  _id: string;
+  title: string;
+  description: string;
+  type: "success" | "warning" | "info" | "error";
+  read: boolean;
+  time: string;
+}
+
+interface UserData {
+  firstName: string;
+  lastName: string;
+  email: string;
+}
 
 export function Header() {
-  const [isDarkMode, setIsDarkMode] = useState(false)
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [userData, setUserData] = useState<UserData>({
+    firstName: "",
+    lastName: "",
+    email: "",
+  });
 
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode)
-    document.documentElement.classList.toggle("dark")
-  }
-
-  const notifications = [
-    {
-      id: 1,
-      title: "Document Processing Complete",
-      description: "Machine Learning Basics.pdf has been processed",
-      time: "5 minutes ago",
-      type: "success",
-      read: false
-    },
-    {
-      id: 2,
-      title: "AI Insight Available",
-      description: "New learning pattern detected in your activity",
-      time: "1 hour ago",
-      type: "info",
-      read: false
-    },
-    {
-      id: 3,
-      title: "Memory Review Due",
-      description: "3 memories are ready for review",
-      time: "2 hours ago",
-      type: "warning",
-      read: true
+  const fetchUserData = async () => {
+    try {
+      const response = await api.getProfile();
+      setUserData(response.profile);
+    } catch (err) {
+      console.error("Failed to fetch user data:", err);
     }
-  ]
+  };
+
+  useEffect(() => {
+    fetchUserData();
+  }, []);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case "success": return <CheckCircle className="h-4 w-4 text-green-500" />
-      case "warning": return <AlertCircle className="h-4 w-4 text-yellow-500" />
-      case "info": return <Info className="h-4 w-4 text-blue-500" />
-      default: return <Info className="h-4 w-4 text-gray-500" />
+      case "success":
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case "warning":
+        return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+      case "info":
+        return <Info className="h-4 w-4 text-blue-500" />;
+      default:
+        return <Info className="h-4 w-4 text-gray-500" />;
     }
-  }
+  };
 
-  const unreadCount = notifications.filter(n => !n.read).length
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
     <header className="flex h-16 items-center justify-between border-b bg-background px-6">
@@ -83,7 +87,7 @@ export function Header() {
           />
         </div>
       </div>
-      
+
       <div className="flex items-center space-x-4">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -103,7 +107,10 @@ export function Header() {
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             {notifications.map((notification) => (
-              <DropdownMenuItem key={notification.id} className="flex flex-col items-start p-4">
+              <DropdownMenuItem
+                key={notification._id}
+                className="flex flex-col items-start p-4"
+              >
                 <div className="flex items-start space-x-3 w-full">
                   {getNotificationIcon(notification.type)}
                   <div className="flex-1">
@@ -124,11 +131,7 @@ export function Header() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-        
-        <Button variant="ghost" size="icon" onClick={toggleTheme}>
-          {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-        </Button>
-        
+
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon">
@@ -138,26 +141,36 @@ export function Header() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium">John Doe</p>
-                <p className="text-xs text-muted-foreground">john.doe@example.com</p>
+                <p className="text-sm font-medium">{userData.firstName} {userData.lastName}</p>
+                <p className="text-xs text-muted-foreground">
+                  {userData.email}
+                </p>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
               <User className="mr-2 h-4 w-4" />
-              <a href="/profile" className="w-full">Profile</a>
+              <a href="/profile" className="w-full">
+                Profile
+              </a>
             </DropdownMenuItem>
             <DropdownMenuItem>
               <Settings className="mr-2 h-4 w-4" />
-              <a href="/settings" className="w-full">Settings</a>
+              <a href="/settings" className="w-full">
+                Settings
+              </a>
             </DropdownMenuItem>
             <DropdownMenuItem>
               <CreditCard className="mr-2 h-4 w-4" />
-              <a href="/billing" className="w-full">Billing</a>
+              <a href="/billing" className="w-full">
+                Billing
+              </a>
             </DropdownMenuItem>
             <DropdownMenuItem>
               <HelpCircle className="mr-2 h-4 w-4" />
-              <a href="/support" className="w-full">Help & Support</a>
+              <a href="/support" className="w-full">
+                Help & Support
+              </a>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
@@ -168,5 +181,5 @@ export function Header() {
         </DropdownMenu>
       </div>
     </header>
-  )
+  );
 }
