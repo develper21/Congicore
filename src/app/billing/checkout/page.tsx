@@ -1,11 +1,12 @@
-"use client"
+"use client";
 
-import { useState, Suspense } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { AuthGuard } from "@/components/auth/auth-guard"
-import { Layout } from "@/components/layout/layout"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { AuthGuard } from "@/components/auth/auth-guard";
+import { Layout } from "@/components/layout/layout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { api } from "@/lib/api";
 import {
   CreditCard,
   Check,
@@ -15,81 +16,115 @@ import {
   Crown,
   Star,
   AlertCircle,
-  Brain
-} from "lucide-react"
+  Brain,
+} from "lucide-react";
 
 const planDetails = {
   free: {
     name: "Free",
     price: "$0",
-    features: ["100 MB storage", "Basic AI chat", "5 documents per month"],
-    icon: <Check className="h-5 w-5" />
+    description: "Perfect for getting started",
+    features: [
+      "100 MB storage",
+      "Basic AI chat",
+      "5 documents per month",
+      "Email support",
+      "Basic knowledge graph",
+    ],
+    icon: <Check className="h-5 w-5" />,
   },
   pro: {
     name: "Pro",
     price: "$19",
-    features: ["10 GB storage", "Advanced AI chat", "Unlimited documents", "Spaced repetition"],
-    icon: <Crown className="h-5 w-5" />
+    description: "For serious learners",
+    features: [
+      "10 GB storage",
+      "Advanced AI chat",
+      "Unlimited documents",
+      "Priority email support",
+      "Advanced knowledge graph",
+      "Spaced repetition",
+      "AI-powered insights",
+      "Export capabilities",
+    ],
+    icon: <Crown className="h-5 w-5" />,
   },
   team: {
     name: "Team",
     price: "$49",
-    features: ["100 GB storage", "Team collaboration", "API access", "Priority support"],
-    icon: <Star className="h-5 w-5" />
-  }
-}
+    description: "For teams and organizations",
+    features: [
+      "100 GB storage",
+      "Everything in Pro",
+      "Team collaboration",
+      "API access",
+      "Custom integrations",
+      "Dedicated support",
+      "Advanced analytics",
+      "Custom branding",
+      "SSO authentication",
+    ],
+    icon: <Star className="h-5 w-5" />,
+  },
+};
 
 function CheckoutForm() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const [selectedPlan] = useState(searchParams.get("plan") || "free")
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly")
-  const [paymentMethod, setPaymentMethod] = useState<"card" | "paypal">("card")
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [currentStep, setCurrentStep] = useState(1)
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [selectedPlan] = useState(searchParams.get("plan") || "free");
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">(
+    "monthly",
+  );
+  const [paymentMethod, setPaymentMethod] = useState<"card" | "paypal">("card");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [currentStep, setCurrentStep] = useState(1);
   const [cardDetails, setCardDetails] = useState({
     number: "",
     expiry: "",
     cvv: "",
     name: "",
     country: "",
-    zip: ""
-  })
+    zip: "",
+  });
 
-  const [paypalEmail, setPaypalEmail] = useState("")
+  const [paypalEmail, setPaypalEmail] = useState("");
 
-  const plan = planDetails[selectedPlan as keyof typeof planDetails]
-  const finalPrice = billingCycle === "yearly"
-    ? parseInt(plan.price.replace("$", "")) * 12 * 0.8
-    : parseInt(plan.price.replace("$", ""))
+  const plan = planDetails[selectedPlan as keyof typeof planDetails];
+  const finalPrice =
+    billingCycle === "yearly"
+      ? parseInt(plan.price.replace("$", "")) * 12 * 0.8
+      : parseInt(plan.price.replace("$", ""));
 
   const handleBack = () => {
     if (currentStep > 1) {
-      setCurrentStep(currentStep - 1)
+      setCurrentStep(currentStep - 1);
     } else {
-      router.push("/billing")
+      router.push("/billing");
     }
-  }
+  };
 
   const handleNext = () => {
     if (currentStep < 3) {
-      setCurrentStep(currentStep + 1)
+      setCurrentStep(currentStep + 1);
     }
-  }
+  };
 
   const handlePayment = async () => {
-    setIsProcessing(true)
+    setIsProcessing(true);
+    setError(null);
 
-    // Simulate payment processing
-    setTimeout(() => {
-      // Store subscription info
-      localStorage.setItem("subscription-plan", selectedPlan)
-      localStorage.setItem("billing-cycle", billingCycle)
-
-      // Redirect to success page
-      router.push("/billing/success")
-    }, 3000)
-  }
+    try {
+      const response = await api.createCheckoutSession(selectedPlan, billingCycle);
+      localStorage.setItem("subscription-plan", selectedPlan);
+      localStorage.setItem("billing-cycle", billingCycle);
+      localStorage.setItem("checkout-session", response.sessionId);
+      router.push("/billing/success");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Payment processing failed");
+      setIsProcessing(false);
+    }
+  };
 
   const renderStepContent = () => {
     switch (currentStep) {
@@ -115,7 +150,9 @@ function CheckoutForm() {
                       <div>
                         <h3 className="text-xl font-bold">{plan.name} Plan</h3>
                         <p className="text-muted-foreground">
-                          {billingCycle === "yearly" ? "Yearly billing (Save 20%)" : "Monthly billing"}
+                          {billingCycle === "yearly"
+                            ? "Yearly billing (Save 20%)"
+                            : "Monthly billing"}
                         </p>
                       </div>
                     </div>
@@ -175,7 +212,7 @@ function CheckoutForm() {
               </div>
             </CardContent>
           </Card>
-        )
+        );
 
       case 2:
         return (
@@ -192,8 +229,11 @@ function CheckoutForm() {
               <div className="space-y-6">
                 <div className="grid gap-4 md:grid-cols-2">
                   <Card
-                    className={`cursor-pointer border-2 ${paymentMethod === "card" ? "border-primary bg-primary/5" : "border-border"
-                      }`}
+                    className={`cursor-pointer border-2 ${
+                      paymentMethod === "card"
+                        ? "border-primary bg-primary/5"
+                        : "border-border"
+                    }`}
                     onClick={() => setPaymentMethod("card")}
                   >
                     <CardContent className="p-6 text-center">
@@ -206,8 +246,11 @@ function CheckoutForm() {
                   </Card>
 
                   <Card
-                    className={`cursor-pointer border-2 ${paymentMethod === "paypal" ? "border-primary bg-primary/5" : "border-border"
-                      }`}
+                    className={`cursor-pointer border-2 ${
+                      paymentMethod === "paypal"
+                        ? "border-primary bg-primary/5"
+                        : "border-border"
+                    }`}
                     onClick={() => setPaymentMethod("paypal")}
                   >
                     <CardContent className="p-6 text-center">
@@ -230,12 +273,19 @@ function CheckoutForm() {
                     <CardContent>
                       <div className="space-y-4">
                         <div>
-                          <label className="text-sm font-medium">Card Number</label>
+                          <label className="text-sm font-medium">
+                            Card Number
+                          </label>
                           <input
                             type="text"
                             placeholder="1234 5678 9012 3456"
                             value={cardDetails.number}
-                            onChange={(e) => setCardDetails(prev => ({ ...prev, number: e.target.value }))}
+                            onChange={(e) =>
+                              setCardDetails((prev) => ({
+                                ...prev,
+                                number: e.target.value,
+                              }))
+                            }
                             className="w-full mt-1 p-3 border border-border rounded-lg bg-background"
                             maxLength={19}
                           />
@@ -243,12 +293,19 @@ function CheckoutForm() {
 
                         <div className="grid gap-4 md:grid-cols-2">
                           <div>
-                            <label className="text-sm font-medium">Expiry Date</label>
+                            <label className="text-sm font-medium">
+                              Expiry Date
+                            </label>
                             <input
                               type="text"
                               placeholder="MM/YY"
                               value={cardDetails.expiry}
-                              onChange={(e) => setCardDetails(prev => ({ ...prev, expiry: e.target.value }))}
+                              onChange={(e) =>
+                                setCardDetails((prev) => ({
+                                  ...prev,
+                                  expiry: e.target.value,
+                                }))
+                              }
                               className="w-full mt-1 p-3 border border-border rounded-lg bg-background"
                               maxLength={5}
                             />
@@ -259,7 +316,12 @@ function CheckoutForm() {
                               type="text"
                               placeholder="123"
                               value={cardDetails.cvv}
-                              onChange={(e) => setCardDetails(prev => ({ ...prev, cvv: e.target.value }))}
+                              onChange={(e) =>
+                                setCardDetails((prev) => ({
+                                  ...prev,
+                                  cvv: e.target.value,
+                                }))
+                              }
                               className="w-full mt-1 p-3 border border-border rounded-lg bg-background"
                               maxLength={4}
                             />
@@ -267,22 +329,36 @@ function CheckoutForm() {
                         </div>
 
                         <div>
-                          <label className="text-sm font-medium">Cardholder Name</label>
+                          <label className="text-sm font-medium">
+                            Cardholder Name
+                          </label>
                           <input
                             type="text"
                             placeholder="John Doe"
                             value={cardDetails.name}
-                            onChange={(e) => setCardDetails(prev => ({ ...prev, name: e.target.value }))}
+                            onChange={(e) =>
+                              setCardDetails((prev) => ({
+                                ...prev,
+                                name: e.target.value,
+                              }))
+                            }
                             className="w-full mt-1 p-3 border border-border rounded-lg bg-background"
                           />
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-2">
                           <div>
-                            <label className="text-sm font-medium">Country</label>
+                            <label className="text-sm font-medium">
+                              Country
+                            </label>
                             <select
                               value={cardDetails.country}
-                              onChange={(e) => setCardDetails(prev => ({ ...prev, country: e.target.value }))}
+                              onChange={(e) =>
+                                setCardDetails((prev) => ({
+                                  ...prev,
+                                  country: e.target.value,
+                                }))
+                              }
                               className="w-full mt-1 p-3 border border-border rounded-lg bg-background"
                             >
                               <option value="">Select Country</option>
@@ -293,12 +369,19 @@ function CheckoutForm() {
                             </select>
                           </div>
                           <div>
-                            <label className="text-sm font-medium">ZIP/Postal Code</label>
+                            <label className="text-sm font-medium">
+                              ZIP/Postal Code
+                            </label>
                             <input
                               type="text"
                               placeholder="12345"
                               value={cardDetails.zip}
-                              onChange={(e) => setCardDetails(prev => ({ ...prev, zip: e.target.value }))}
+                              onChange={(e) =>
+                                setCardDetails((prev) => ({
+                                  ...prev,
+                                  zip: e.target.value,
+                                }))
+                              }
                               className="w-full mt-1 p-3 border border-border rounded-lg bg-background"
                             />
                           </div>
@@ -314,7 +397,9 @@ function CheckoutForm() {
                     <CardContent>
                       <div className="space-y-4">
                         <div>
-                          <label className="text-sm font-medium">PayPal Email</label>
+                          <label className="text-sm font-medium">
+                            PayPal Email
+                          </label>
                           <input
                             type="email"
                             placeholder="your@email.com"
@@ -324,7 +409,8 @@ function CheckoutForm() {
                           />
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          You&apos;ll be redirected to PayPal to complete your payment securely.
+                          You&apos;ll be redirected to PayPal to complete your
+                          payment securely.
                         </p>
                       </div>
                     </CardContent>
@@ -334,7 +420,8 @@ function CheckoutForm() {
                 <div className="flex items-center space-x-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                   <Shield className="h-5 w-5 text-blue-600" />
                   <p className="text-sm text-blue-800">
-                    Your payment information is encrypted and secure. We never store your card details.
+                    Your payment information is encrypted and secure. We never
+                    store your card details.
                   </p>
                 </div>
 
@@ -351,7 +438,7 @@ function CheckoutForm() {
               </div>
             </CardContent>
           </Card>
-        )
+        );
 
       case 3:
         return (
@@ -383,7 +470,9 @@ function CheckoutForm() {
                     <div className="flex justify-between">
                       <span>Payment Method</span>
                       <span className="font-medium">
-                        {paymentMethod === "card" ? "Credit/Debit Card" : "PayPal"}
+                        {paymentMethod === "card"
+                          ? "Credit/Debit Card"
+                          : "PayPal"}
                       </span>
                     </div>
                     <div className="border-t pt-3">
@@ -416,7 +505,8 @@ function CheckoutForm() {
                 <div className="flex items-center space-x-2 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                   <AlertCircle className="h-5 w-5 text-yellow-600" />
                   <p className="text-sm text-yellow-800">
-                    By clicking &quot;Complete Purchase&quot;, you agree to our Terms of Service and Privacy Policy.
+                    By clicking &quot;Complete Purchase&quot;, you agree to our
+                    Terms of Service and Privacy Policy.
                   </p>
                 </div>
 
@@ -446,12 +536,12 @@ function CheckoutForm() {
               </div>
             </CardContent>
           </Card>
-        )
+        );
 
       default:
-        return null
+        return null;
     }
-  }
+  };
 
   return (
     <AuthGuard>
@@ -464,19 +554,32 @@ function CheckoutForm() {
             </p>
           </div>
 
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+              <AlertCircle className="h-4 w-4 text-red-500" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+
           {/* Progress Steps */}
           <div className="flex items-center justify-between">
             {[1, 2, 3].map((step) => (
               <div key={step} className="flex items-center">
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${step <= currentStep
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground"
-                  }`}>
+                <div
+                  className={`h-8 w-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                    step <= currentStep
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
+                  }`}
+                >
                   {step}
                 </div>
                 {step < 3 && (
-                  <div className={`h-1 w-full mx-2 ${step < currentStep ? "bg-primary" : "bg-muted"
-                    }`} />
+                  <div
+                    className={`h-1 w-full mx-2 ${
+                      step < currentStep ? "bg-primary" : "bg-muted"
+                    }`}
+                  />
                 )}
               </div>
             ))}
@@ -486,22 +589,24 @@ function CheckoutForm() {
         </div>
       </Layout>
     </AuthGuard>
-  )
+  );
 }
 
 export default function CheckoutPage() {
   return (
-    <Suspense fallback={
-      <Layout>
-        <div className="max-w-2xl mx-auto space-y-6 pt-12">
-          <div className="flex flex-col items-center space-y-4">
-            <Brain className="h-12 w-12 text-primary animate-pulse" />
-            <p className="text-lg font-medium">Preparing checkout...</p>
+    <Suspense
+      fallback={
+        <Layout>
+          <div className="max-w-2xl mx-auto space-y-6 pt-12">
+            <div className="flex flex-col items-center space-y-4">
+              <Brain className="h-12 w-12 text-primary animate-pulse" />
+              <p className="text-lg font-medium">Preparing checkout...</p>
+            </div>
           </div>
-        </div>
-      </Layout>
-    }>
+        </Layout>
+      }
+    >
       <CheckoutForm />
     </Suspense>
-  )
+  );
 }

@@ -1,22 +1,23 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { AuthGuard } from "@/components/auth/auth-guard"
-import { Layout } from "@/components/layout/layout"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { 
-  CreditCard, 
-  Check, 
-  X, 
-  Zap, 
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { AuthGuard } from "@/components/auth/auth-guard";
+import { Layout } from "@/components/layout/layout";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { api } from "@/lib/api";
+import {
+  CreditCard,
+  Check,
+  X,
   Crown,
   Star,
   ArrowRight,
   Download,
-  Calendar
-} from "lucide-react"
+  Calendar,
+  Loader2,
+} from "lucide-react";
 
 const plans = [
   {
@@ -29,16 +30,15 @@ const plans = [
       "Basic AI chat",
       "5 documents per month",
       "Email support",
-      "Basic knowledge graph"
+      "Basic knowledge graph",
     ],
     notIncluded: [
       "Advanced AI features",
       "Priority support",
       "Unlimited storage",
-      "Team collaboration"
+      "Team collaboration",
     ],
-    current: true,
-    popular: false
+    popular: false,
   },
   {
     id: "pro",
@@ -53,15 +53,10 @@ const plans = [
       "Advanced knowledge graph",
       "Spaced repetition",
       "AI-powered insights",
-      "Export capabilities"
+      "Export capabilities",
     ],
-    notIncluded: [
-      "Team collaboration",
-      "API access",
-      "Custom integrations"
-    ],
-    current: false,
-    popular: true
+    notIncluded: ["Team collaboration", "API access", "Custom integrations"],
+    popular: true,
   },
   {
     id: "team",
@@ -77,195 +72,306 @@ const plans = [
       "Dedicated support",
       "Advanced analytics",
       "Custom branding",
-      "SSO authentication"
+      "SSO authentication",
     ],
     notIncluded: [],
-    current: false,
-    popular: false
-  }
-]
+    popular: false,
+  },
+];
+
+interface BillingData {
+  currentPlan: string;
+  billingHistory: Array<{
+    id: string;
+    description: string;
+    amount: number;
+    date: string;
+  }>;
+  paymentMethods: Array<{
+    id: string;
+    last4: string;
+    brand: string;
+    expiry: string;
+  }>;
+}
 
 export default function BillingPage() {
-  const [selectedPlan, setSelectedPlan] = useState("free")
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly")
-  const router = useRouter()
+  const [selectedPlan, setSelectedPlan] = useState("free");
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">(
+    "monthly",
+  );
+  const [billingData, setBillingData] = useState<BillingData>({
+    currentPlan: "free",
+    billingHistory: [],
+    paymentMethods: [],
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+
+  useEffect(() => {
+    fetchBilling();
+  }, []);
+
+  const fetchBilling = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const [billing, subscription] = await Promise.all([
+        api.getBilling(),
+        api.getSubscription(),
+      ]);
+      setBillingData({
+        currentPlan: billing.billing.currentPlan || "free",
+        billingHistory: subscription.subscription?.billingHistory || [],
+        paymentMethods: subscription.subscription?.paymentMethods || [],
+      });
+      setSelectedPlan(billing.billing.currentPlan || "free");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch billing data");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleUpgrade = (planId: string) => {
-    setSelectedPlan(planId)
-    // Handle upgrade logic
-  }
+    setSelectedPlan(planId);
+    router.push(`/billing/checkout?plan=${planId}`);
+  };
 
   return (
     <AuthGuard>
       <Layout>
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Billing</h1>
-            <p className="text-muted-foreground">
-              Manage your subscription and billing information
-            </p>
+        {loading ? (
+          <div className="flex items-center justify-center py-12">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </div>
-
-          {/* Current Plan */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Current Plan</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-lg font-semibold">Free Plan</h3>
-                    <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                      Active
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    You're currently on the free plan. Upgrade to unlock more features.
-                  </p>
-                </div>
-                <Button>
-                  Upgrade Plan
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Billing Cycle Toggle */}
-          <div className="flex items-center justify-center space-x-4">
-            <span className={`text-sm ${billingCycle === "monthly" ? "font-medium" : "text-muted-foreground"}`}>
-              Monthly
-            </span>
-            <button
-              onClick={() => setBillingCycle(billingCycle === "monthly" ? "yearly" : "monthly")}
-              className="relative inline-flex h-6 w-11 items-center rounded-full bg-muted transition-colors"
-            >
-              <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
-                  billingCycle === "yearly" ? "translate-x-6" : "translate-x-1"
-                }`}
-              />
-            </button>
-            <span className={`text-sm ${billingCycle === "yearly" ? "font-medium" : "text-muted-foreground"}`}>
-              Yearly
-              <span className="ml-1 px-2 py-1 bg-primary text-primary-foreground text-xs rounded">
-                Save 20%
-              </span>
-            </span>
+        ) : error ? (
+          <div className="text-center py-12">
+            <p className="text-red-500 mb-4">{error}</p>
+            <Button onClick={fetchBilling}>Retry</Button>
           </div>
+        ) : (
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Billing</h1>
+              <p className="text-muted-foreground">
+                Manage your subscription and billing information
+              </p>
+            </div>
 
-          {/* Pricing Plans */}
-          <div className="grid gap-6 md:grid-cols-3">
-            {plans.map((plan) => (
-              <Card 
-                key={plan.id} 
-                className={`relative ${plan.popular ? 'border-primary shadow-lg' : ''} ${
-                  plan.current ? 'ring-2 ring-primary' : ''
-                }`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="px-3 py-1 bg-primary text-primary-foreground text-xs rounded-full">
-                      Most Popular
-                    </span>
+            {/* Current Plan */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Current Plan</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold">
+                        {plans.find((p) => p.id === billingData.currentPlan)?.name || "Free Plan"}
+                      </h3>
+                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                        Active
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      You&apos;re currently on the {plans.find((p) => p.id === billingData.currentPlan)?.name || "free"} plan. Upgrade to unlock
+                      more features.
+                    </p>
                   </div>
-                )}
-                {plan.current && (
-                  <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                    <span className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                      Current Plan
-                    </span>
-                  </div>
-                )}
-                <CardHeader className="text-center">
-                  <CardTitle className="flex items-center justify-center space-x-2">
-                    <span>{plan.name}</span>
-                    {plan.id === "pro" && <Crown className="h-5 w-5 text-primary" />}
-                    {plan.id === "team" && <Star className="h-5 w-5 text-primary" />}
-                  </CardTitle>
-                  <div className="mt-4">
-                    <span className="text-3xl font-bold">{plan.price}</span>
-                    <span className="text-muted-foreground">/{billingCycle === "monthly" ? "month" : "year"}</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground">{plan.description}</p>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {plan.features.map((feature, index) => (
-                      <div key={index} className="flex items-center space-x-2">
-                        <Check className="h-4 w-4 text-green-500" />
-                        <span className="text-sm">{feature}</span>
-                      </div>
-                    ))}
-                    {plan.notIncluded.map((feature, index) => (
-                      <div key={index} className="flex items-center space-x-2 opacity-50">
-                        <X className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">{feature}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <Button 
-                    onClick={() => router.push(`/billing/checkout?plan=${plan.id}`)}
-                    disabled={plan.current}
-                  >
-                    {plan.current ? "Current Plan" : `Upgrade to ${plan.name}`}
+                  <Button onClick={() => handleUpgrade("pro")}>
+                    Upgrade Plan
+                    <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          {/* Billing History */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Billing History</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center space-x-3">
-                    <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center">
-                      <Calendar className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Free Plan Activation</p>
-                      <p className="text-sm text-muted-foreground">Account created</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-medium">$0.00</p>
-                    <p className="text-sm text-muted-foreground">Jan 1, 2024</p>
-                  </div>
                 </div>
-              </div>
-              <Button variant="outline" className="w-full mt-4">
-                <Download className="mr-2 h-4 w-4" />
-                Download Invoices
-              </Button>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Payment Methods */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Payment Methods</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-center py-8">
-                <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">
-                  No payment methods on file. Add a payment method to upgrade your plan.
-                </p>
-                <Button>
-                  <CreditCard className="mr-2 h-4 w-4" />
-                  Add Payment Method
+            {/* Billing Cycle Toggle */}
+            <div className="flex items-center justify-center space-x-4">
+              <span
+                className={`text-sm ${billingCycle === "monthly" ? "font-medium" : "text-muted-foreground"}`}
+              >
+                Monthly
+              </span>
+              <button
+                onClick={() =>
+                  setBillingCycle(
+                    billingCycle === "monthly" ? "yearly" : "monthly",
+                  )
+                }
+                className="relative inline-flex h-6 w-11 items-center rounded-full bg-muted transition-colors"
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
+                    billingCycle === "yearly" ? "translate-x-6" : "translate-x-1"
+                  }`}
+                />
+              </button>
+              <span
+                className={`text-sm ${billingCycle === "yearly" ? "font-medium" : "text-muted-foreground"}`}
+              >
+                Yearly
+                <span className="ml-1 px-2 py-1 bg-primary text-primary-foreground text-xs rounded">
+                  Save 20%
+                </span>
+              </span>
+            </div>
+
+            {/* Pricing Plans */}
+            <div className="grid gap-6 md:grid-cols-3">
+              {plans.map((plan) => (
+                <Card
+                  key={plan.id}
+                  className={`relative ${plan.popular ? "border-primary shadow-lg" : ""} ${
+                    billingData.currentPlan === plan.id ? "ring-2 ring-primary" : ""
+                  }`}
+                >
+                  {plan.popular && (
+                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                      <span className="px-3 py-1 bg-primary text-primary-foreground text-xs rounded-full">
+                        Most Popular
+                      </span>
+                    </div>
+                  )}
+                  {billingData.currentPlan === plan.id && (
+                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
+                      <span className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                        Current Plan
+                      </span>
+                    </div>
+                  )}
+                  <CardHeader className="text-center">
+                    <CardTitle className="flex items-center justify-center space-x-2">
+                      <span>{plan.name}</span>
+                      {plan.id === "pro" && (
+                        <Crown className="h-5 w-5 text-primary" />
+                      )}
+                      {plan.id === "team" && (
+                        <Star className="h-5 w-5 text-primary" />
+                      )}
+                    </CardTitle>
+                    <div className="mt-4">
+                      <span className="text-3xl font-bold">{plan.price}</span>
+                      <span className="text-muted-foreground">
+                        /{billingCycle === "monthly" ? "month" : "year"}
+                      </span>
+                    </div>
+                    <p className="text-sm text-muted-foreground">
+                      {plan.description}
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {plan.features.map((feature, index) => (
+                        <div key={index} className="flex items-center space-x-2">
+                          <Check className="h-4 w-4 text-green-500" />
+                          <span className="text-sm">{feature}</span>
+                        </div>
+                      ))}
+                      {plan.notIncluded.map((feature, index) => (
+                        <div
+                          key={index}
+                          className="flex items-center space-x-2 opacity-50"
+                        >
+                          <X className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground">
+                            {feature}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    <Button
+                      onClick={() => handleUpgrade(plan.id)}
+                      disabled={billingData.currentPlan === plan.id}
+                    >
+                      {billingData.currentPlan === plan.id ? "Current Plan" : `Upgrade to ${plan.name}`}
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Billing History */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Billing History</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {billingData.billingHistory.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    No billing history available
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {billingData.billingHistory.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center">
+                            <Calendar className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="font-medium">{item.description}</p>
+                            <p className="text-sm text-muted-foreground">
+                              {new Date(item.date).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">${item.amount.toFixed(2)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <Button variant="outline" className="w-full mt-4">
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Invoices
                 </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+
+            {/* Payment Methods */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Payment Methods</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {billingData.paymentMethods.length === 0 ? (
+                  <div className="text-center py-8">
+                    <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground mb-4">
+                      No payment methods on file. Add a payment method to upgrade
+                      your plan.
+                    </p>
+                    <Button>
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Add Payment Method
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {billingData.paymentMethods.map((method) => (
+                      <div key={method.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center space-x-3">
+                          <CreditCard className="h-5 w-5" />
+                          <div>
+                            <p className="font-medium">{method.brand} •••• {method.last4}</p>
+                            <p className="text-sm text-muted-foreground">Expires {method.expiry}</p>
+                          </div>
+                        </div>
+                        <Button variant="outline" size="sm">Edit</Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </Layout>
     </AuthGuard>
-  )
+  );
 }
