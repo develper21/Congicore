@@ -1,33 +1,33 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { 
-  Mail, 
-  ArrowLeft,
-  ArrowRight,
-  CheckCircle,
-  Brain
-} from "lucide-react"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { api } from "@/lib/api";
+import { Mail, ArrowLeft, ArrowRight, CheckCircle, Brain, AlertCircle } from "lucide-react";
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState("")
-  const [isSubmitted, setIsSubmitted] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const [email, setEmail] = useState("");
+  const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
-    
-    // Simulate API call
-    setTimeout(() => {
-      setIsSubmitted(true)
-      setIsLoading(false)
-    }, 2000)
-  }
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      await api.forgotPassword(email);
+      setIsSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send reset email");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   if (isSubmitted) {
     return (
@@ -42,14 +42,23 @@ export default function ForgotPasswordPage() {
               </div>
               <h2 className="text-2xl font-bold mb-2">Check your email</h2>
               <p className="text-muted-foreground mb-6">
-                We've sent a password reset link to<br />
+                We&apos;ve sent a password reset link to
+                <br />
                 <span className="font-medium">{email}</span>
               </p>
               <div className="space-y-3">
-                <Button variant="outline" className="w-full" onClick={() => setIsSubmitted(false)}>
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setIsSubmitted(false)}
+                >
                   Send again
                 </Button>
-                <Button variant="ghost" className="w-full" onClick={() => router.push("/auth/login")}>
+                <Button
+                  variant="ghost"
+                  className="w-full"
+                  onClick={() => router.push("/auth/login")}
+                >
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   Back to sign in
                 </Button>
@@ -58,7 +67,7 @@ export default function ForgotPasswordPage() {
           </Card>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -70,7 +79,9 @@ export default function ForgotPasswordPage() {
             <span className="text-2xl font-bold">Knowledge Twin</span>
           </div>
           <h1 className="text-2xl font-bold">Reset your password</h1>
-          <p className="text-muted-foreground">Enter your email to receive reset instructions</p>
+          <p className="text-muted-foreground">
+            Enter your email to receive reset instructions
+          </p>
         </div>
 
         <Card>
@@ -78,6 +89,12 @@ export default function ForgotPasswordPage() {
             <CardTitle>Forgot Password</CardTitle>
           </CardHeader>
           <CardContent>
+            {error && (
+              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+                <AlertCircle className="h-4 w-4 text-red-500" />
+                <p className="text-sm text-red-700">{error}</p>
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
                 <label className="text-sm font-medium">Email</label>
@@ -101,7 +118,11 @@ export default function ForgotPasswordPage() {
             </form>
 
             <div className="mt-6">
-              <Button variant="ghost" className="w-full" onClick={() => router.push("/auth/login")}>
+              <Button
+                variant="ghost"
+                className="w-full"
+                onClick={() => router.push("/auth/login")}
+              >
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to sign in
               </Button>
@@ -110,5 +131,5 @@ export default function ForgotPasswordPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }
