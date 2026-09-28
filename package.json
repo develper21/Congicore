@@ -6,10 +6,13 @@
     "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "seed": "tsx scripts/seed.ts",
+    "seed:keep": "tsx scripts/seed.ts --keep",
+    "verify:postman": "tsx scripts/verify-postman.ts",
+    "smoke": "bash scripts/smoke-test.sh"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.450.0",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@radix-ui/react-slot": "^1.2.4",
@@ -50,6 +53,7 @@
     "eslint-config-next": "16.1.6",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.19",
+    "tsx": "^4.20.0",
     "typescript": "^5"
   }
 }
