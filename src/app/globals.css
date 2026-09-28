@@ -4,48 +4,49 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221.2 83.2% 53.3%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221.2 83.2% 53.3%;
-    --radius: 0.5rem;
+    /* Carbon Teal Deep Ambient Background */
+    --background: 184 85% 5%;
+    --foreground: 213 20% 93%; /* Soft Chrome #E8ECF1 */
+    --card: 184 70% 8%;       /* Carbon Teal Surface #042F32 tint */
+    --card-foreground: 213 20% 93%;
+    --popover: 184 75% 7%;
+    --popover-foreground: 213 20% 93%;
+    --primary: 255 100% 59%;   /* Chrome Violet #5F2CFF */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 270 100% 18%; /* Toxic Violet #3D007A tint */
+    --secondary-foreground: 197 100% 94%; /* Glass Blue #DFF6FF */
+    --muted: 184 40% 13%;
+    --muted-foreground: 213 15% 68%;
+    --accent: 227 100% 50%;    /* Hyper Cobalt #0038FF */
+    --accent-foreground: 213 20% 98%;
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 184 40% 16%;
+    --input: 184 40% 16%;
+    --ring: 255 100% 59%;      /* Chrome Violet */
+    --radius: 0.875rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 217.2 91.2% 59.8%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 224.3 76.3% 94.1%;
+    --background: 184 85% 5%;
+    --foreground: 213 20% 93%;
+    --card: 184 70% 8%;
+    --card-foreground: 213 20% 93%;
+    --popover: 184 75% 7%;
+    --popover-foreground: 213 20% 93%;
+    --primary: 255 100% 59%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 270 100% 18%;
+    --secondary-foreground: 197 100% 94%;
+    --muted: 184 40% 13%;
+    --muted-foreground: 213 15% 68%;
+    --accent: 227 100% 50%;
+    --accent-foreground: 213 20% 98%;
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 184 40% 16%;
+    --input: 184 40% 16%;
+    --ring: 255 100% 59%;
   }
 }
 
@@ -54,18 +55,133 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased selection:bg-chromeViolet selection:text-white;
+    background-color: #021618;
+    background-image: 
+      radial-gradient(at 100% 0%, rgba(95, 44, 255, 0.15) 0px, transparent 48%),
+      radial-gradient(at 0% 100%, rgba(4, 47, 50, 0.6) 0px, transparent 55%),
+      radial-gradient(at 50% 50%, rgba(61, 0, 122, 0.12) 0px, transparent 60%);
+    background-attachment: fixed;
   }
 }
 
 @layer components {
-  .gradient-bg {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  /* Carbon Teal & Toxic Violet Glass Panels */
+  .glass-panel {
+    background: rgba(4, 47, 50, 0.65);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(232, 236, 241, 0.09);
+    box-shadow: 0 10px 32px 0 rgba(2, 22, 24, 0.6);
   }
-  
-  .glass-effect {
+
+  .glass-panel-hover {
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .glass-panel-hover:hover {
+    background: rgba(7, 59, 63, 0.85);
+    border-color: rgba(95, 44, 255, 0.45);
+    box-shadow: 0 14px 40px -10px rgba(95, 44, 255, 0.35);
+    transform: translateY(-2px);
+  }
+
+  .glass-input {
+    background: rgba(4, 47, 50, 0.5);
     backdrop-filter: blur(10px);
-    background: rgba(255, 255, 255, 0.1);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(232, 236, 241, 0.12);
+    color: #E8ECF1;
+    transition: all 0.2s ease;
   }
+  .glass-input:focus {
+    border-color: #5F2CFF;
+    box-shadow: 0 0 0 3px rgba(95, 44, 255, 0.25);
+  }
+
+  /* Vibrant Gradient Text using New Palette */
+  .gradient-text {
+    background: linear-gradient(135deg, #E8ECF1 15%, #DFF6FF 50%, #5F2CFF 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .gradient-text-accent {
+    background: linear-gradient(135deg, #D6FFCB 0%, #DFF6FF 50%, #FFD8B8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .gradient-text-violet {
+    background: linear-gradient(135deg, #5F2CFF 0%, #0038FF 60%, #DFF6FF 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  /* Signature Action Buttons */
+  .gradient-primary-btn {
+    background: linear-gradient(135deg, #5F2CFF 0%, #0038FF 100%);
+    position: relative;
+    overflow: hidden;
+    color: #FFFFFF;
+    box-shadow: 0 0 20px -3px rgba(95, 44, 255, 0.45);
+    border: 1px solid rgba(223, 246, 255, 0.25);
+  }
+  .gradient-primary-btn::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(223, 246, 255, 0.25), transparent);
+    transition: left 0.6s ease;
+  }
+  .gradient-primary-btn:hover::before {
+    left: 100%;
+  }
+
+  /* Interactive Signature Pill Badges */
+  .badge-mint {
+    background: rgba(214, 255, 203, 0.12);
+    border: 1px solid rgba(214, 255, 203, 0.35);
+    color: #D6FFCB;
+    box-shadow: 0 0 12px -2px rgba(214, 255, 203, 0.25);
+  }
+
+  .badge-sand {
+    background: rgba(255, 216, 184, 0.12);
+    border: 1px solid rgba(255, 216, 184, 0.35);
+    color: #FFD8B8;
+    box-shadow: 0 0 12px -2px rgba(255, 216, 184, 0.2);
+  }
+
+  .badge-blue {
+    background: rgba(223, 246, 255, 0.12);
+    border: 1px solid rgba(223, 246, 255, 0.35);
+    color: #DFF6FF;
+    box-shadow: 0 0 12px -2px rgba(223, 246, 255, 0.2);
+  }
+
+  .badge-violet {
+    background: rgba(95, 44, 255, 0.18);
+    border: 1px solid rgba(95, 44, 255, 0.4);
+    color: #DFF6FF;
+    box-shadow: 0 0 14px -2px rgba(95, 44, 255, 0.35);
+  }
+}
+
+/* Custom Sleek Scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(2, 22, 24, 0.8);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(7, 59, 63, 0.8);
+  border: 1px solid rgba(95, 44, 255, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #5F2CFF;
 }
