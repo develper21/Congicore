@@ -125,14 +125,11 @@ export default function BillingPage() {
     try {
       setLoading(true);
       setError(null);
-      const [billing, subscription] = await Promise.all([
-        api.getBilling(),
-        api.getSubscription(),
-      ]);
+      const [billing] = await Promise.all([api.getBilling()]);
       setBillingData({
         currentPlan: billing.billing?.currentPlan || "free",
-        billingHistory: subscription.subscription?.billingHistory?.length
-          ? subscription.subscription.billingHistory
+        billingHistory: billing.billingHistory?.length
+          ? billing.billingHistory
           : [
               {
                 id: "inv-001",
@@ -141,7 +138,7 @@ export default function BillingPage() {
                 date: new Date().toISOString(),
               },
             ],
-        paymentMethods: subscription.subscription?.paymentMethods || [],
+        paymentMethods: [],
       });
       setSelectedPlan(billing.billing?.currentPlan || "free");
     } catch {
