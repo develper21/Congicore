@@ -6,10 +6,11 @@ import { getUserIdFromRequest } from "@/lib/auth";
 // GET - Get single memory
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await connectDB();
+    const { id } = await params;
 
     const userId = getUserIdFromRequest(request);
     if (!userId) {
@@ -17,7 +18,7 @@ export async function GET(
     }
 
     const memory = await Memory.findOne({
-      _id: params.id,
+      _id: id,
       userId,
     });
 
@@ -38,10 +39,11 @@ export async function GET(
 // PUT - Update memory
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await connectDB();
+    const { id } = await params;
 
     const userId = getUserIdFromRequest(request);
     if (!userId) {
@@ -74,7 +76,7 @@ export async function PUT(
     if (lastReviewed) updateData.lastReviewed = lastReviewed;
 
     const memory = await Memory.findOneAndUpdate(
-      { _id: params.id, userId },
+      { _id: id, userId },
       updateData,
       { new: true },
     );
@@ -99,10 +101,11 @@ export async function PUT(
 // DELETE - Delete memory
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await connectDB();
+    const { id } = await params;
 
     const userId = getUserIdFromRequest(request);
     if (!userId) {
@@ -110,7 +113,7 @@ export async function DELETE(
     }
 
     const memory = await Memory.findOneAndDelete({
-      _id: params.id,
+      _id: id,
       userId,
     });
 
