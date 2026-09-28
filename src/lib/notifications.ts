@@ -61,7 +61,6 @@ export async function sendReviewReminder(
 async function sendEmailReminder(email: string, memoryCount: number): Promise<void> {
   // Placeholder: In production, integrate with email service like:
   // - SendGrid
-  // - AWS SES
   // - Resend
   // - Nodemailer with SMTP
   
