@@ -118,7 +118,8 @@ function CheckoutForm() {
       const response = await api.createCheckoutSession(selectedPlan, billingCycle);
       localStorage.setItem("subscription-plan", selectedPlan);
       localStorage.setItem("billing-cycle", billingCycle);
-      localStorage.setItem("checkout-session", response.sessionId);
+      // The simulated checkout returns the created subscription; use its id as the session identifier
+      localStorage.setItem("checkout-session", response.subscription?._id || String(Date.now()));
       router.push("/billing/success");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Payment processing failed");
