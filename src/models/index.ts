@@ -71,6 +71,8 @@ const DocumentSchema = new mongoose.Schema({
   },
   tags: [{ type: String }],
   content: { type: String, default: "" },
+  // Vector embedding for semantic search
+  embedding: { type: [Number] },
   uploadedAt: { type: Date, default: Date.now },
   processedAt: { type: Date },
 });
@@ -99,6 +101,13 @@ const MemorySchema = new mongoose.Schema({
   relatedDocuments: [{ type: mongoose.Schema.Types.ObjectId, ref: "Document" }],
   retentionRate: { type: Number, default: 0 },
   lastReviewed: { type: Date },
+  // SM-2 Spaced Repetition fields
+  easeFactor: { type: Number, default: 2.5 },
+  interval: { type: Number, default: 1 },
+  repetitions: { type: Number, default: 0 },
+  nextReview: { type: Date, default: () => new Date(Date.now() + 24 * 60 * 60 * 1000) },
+  difficulty: { type: String, enum: ["easy", "medium", "hard"], default: "medium" },
+  starred: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now },
 });
