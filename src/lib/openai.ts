@@ -1,10 +1,21 @@
 import OpenAI from 'openai';
 
+// ------------------------------------------------------------------
+// OpenAI client — all knobs come from environment variables.
+// See .env.example for documented variables. The twin engine uses:
+//   OPENAI_API_KEY        -> auth
+//   OPENAI_CHAT_MODEL     -> twin reasoning model (default gpt-4o-mini)
+//   OPENAI_EMBEDDING_MODEL-> vector embeddings (default text-embedding-3-small)
+// ------------------------------------------------------------------
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 if (!OPENAI_API_KEY) {
   console.warn('OPENAI_API_KEY not found in environment variables');
 }
+
+export const OPENAI_CHAT_MODEL = process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini';
+export const OPENAI_EMBEDDING_MODEL =
+  process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
 
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
@@ -46,7 +57,7 @@ export async function generateChatResponse(
     const allMessages = [systemMessage, ...messages];
 
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: OPENAI_CHAT_MODEL,
       messages: allMessages,
       temperature: 0.7,
       max_tokens: 1000,
@@ -74,7 +85,7 @@ export async function generateChatResponse(
 export async function generateEmbedding(text: string): Promise<number[]> {
   try {
     const response = await openai.embeddings.create({
-      model: 'text-embedding-3-small',
+      model: OPENAI_EMBEDDING_MODEL,
       input: text,
     });
 
@@ -91,7 +102,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
 export async function summarizeDocument(content: string): Promise<string> {
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: OPENAI_CHAT_MODEL,
       messages: [
         {
           role: 'system',
@@ -119,7 +130,7 @@ export async function summarizeDocument(content: string): Promise<string> {
 export async function extractConcepts(content: string): Promise<string[]> {
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: OPENAI_CHAT_MODEL,
       messages: [
         {
           role: 'system',
@@ -149,7 +160,7 @@ export async function extractConcepts(content: string): Promise<string[]> {
 export async function autoTagDocument(content: string, title: string): Promise<string[]> {
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
+      model: OPENAI_CHAT_MODEL,
       messages: [
         {
           role: 'system',
