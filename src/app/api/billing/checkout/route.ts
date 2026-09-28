@@ -31,10 +31,8 @@ export async function POST(request: NextRequest) {
       enterprise: { monthly: 50, yearly: 500 },
     };
 
-    const amount =
-      pricing[plan as keyof typeof pricing]?.[
-        cycle as keyof (typeof pricing)[typeof plan]
-      ] || 0;
+    const planPricing = pricing[plan as keyof typeof pricing];
+    const amount = planPricing ? (planPricing as Record<string, number>)[cycle] || 0 : 0;
 
     // Create subscription record
     const subscription = await Subscription.create({
