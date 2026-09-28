@@ -69,7 +69,16 @@ export default function ChatPage() {
         const latestChat = response.chats[0];
         const chatDetail = await api.getChat(latestChat._id);
         if (chatDetail.chat.messages && chatDetail.chat.messages.length > 0) {
-          setMessages(chatDetail.chat.messages);
+          // DB stores role: user|assistant; UI expects sender: user|ai.
+          // Index in the key guarantees uniqueness even when two messages
+          // share the same timestamp (seeded pairs).
+          const mapped = chatDetail.chat.messages.map((m: any, i: number) => ({
+            _id: `${latestChat._id}-${i}-${m.timestamp}`,
+            content: m.content,
+            sender: m.role === "assistant" ? "ai" : "user",
+            timestamp: m.timestamp,
+          }));
+          setMessages(mapped);
         }
       }
     } catch {
@@ -103,35 +112,13 @@ export default function ChatPage() {
       } else {
         const newChat = await api.createChat({
           title: "Session " + new Date().toLocaleDateString(),
-          messages: [
-            {
-              role: "user",
-              content: text,
-              timestamp: new Date(),
-            },
-          ],
+          messages: [],
         });
         chatId = newChat.chat._id;
       }
 
-      const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
-      const messageResponse = await fetch("/api/chat/message", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          chatId,
-          message: text,
-        }),
-      });
-
-      if (!messageResponse.ok) {
-        throw new Error("Failed to send message");
-      }
-
-      const data = await messageResponse.json();
+      // RAG twin pipeline: retrieval + OpenAI generation, persisted server-side
+      const data = await api.sendMessage(chatId, text);
 
       const aiResponse: Message = {
         _id: (Date.now() + 1).toString(),
