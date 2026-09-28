@@ -22,6 +22,29 @@ export async function GET(request: NextRequest) {
     const nodeCount = graph?.nodes.length || 0;
     const edgeCount = graph?.edges.length || 0;
 
+    // Calculate time-based metrics
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const documentsThisWeek = await Document.countDocuments({
+      userId,
+      uploadedAt: { $gte: oneWeekAgo },
+    });
+
+    const documentsThisMonth = await Document.countDocuments({
+      userId,
+      uploadedAt: { $gte: oneMonthAgo },
+    });
+
+    // Calculate memory retention rate
+    const memories = await Memory.find({ userId });
+    let memoryRetention = 0;
+    if (memories.length > 0) {
+      const totalRetention = memories.reduce((sum, mem) => sum + (mem.retentionRate || 0), 0);
+      memoryRetention = Math.round(totalRetention / memories.length);
+    }
+
     // Get recent activity
     const recentDocuments = await Document.find({ userId })
       .sort({ uploadedAt: -1 })
@@ -43,9 +66,9 @@ export async function GET(request: NextRequest) {
           totalDocuments: documentCount,
           aiConversations: chatCount,
           knowledgeGraphNodes: nodeCount,
-          memoryRetention: 0,
-          documentsThisWeek: 0,
-          documentsThisMonth: 0,
+          memoryRetention,
+          documentsThisWeek,
+          documentsThisMonth,
         },
         recentActivity: {
           documents: recentDocuments,
