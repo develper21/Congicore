@@ -67,6 +67,13 @@ export default function SettingsPage() {
     compactMode: false,
   });
 
+  const [appearance, setAppearance] = useState({
+    isDarkMode: true,
+    accentColor: "blue",
+    fontSize: "Medium",
+    compactMode: false,
+  });
+
   useEffect(() => {
     fetchSettings();
   }, []);
@@ -78,8 +85,27 @@ export default function SettingsPage() {
       const response = await api.getSettings();
       if (response && response.settings) {
         setSettingsData((prev) => ({ ...prev, ...response.settings }));
-        if (response.settings.notifications) setNotifications(response.settings.notifications);
+        // Schema stores `notification` (singular); accept both shapes
+        const notif = response.settings.notification || response.settings.notifications;
+        if (notif) setNotifications(notif);
         if (response.settings.privacy) setPrivacy(response.settings.privacy);
+        if (response.settings.ai) {
+          setSettingsData((prev) => ({
+            ...prev,
+            aiModel: response.settings.ai.model || prev.aiModel,
+            responseStyle: response.settings.ai.responseStyle || prev.responseStyle,
+            language: response.settings.ai.language || prev.language,
+            learningPace: response.settings.ai.learningPace || prev.learningPace,
+            difficultyLevel: response.settings.ai.difficultyLevel || prev.difficultyLevel,
+            adaptiveLearning: response.settings.ai.adaptiveLearning ?? prev.adaptiveLearning,
+          }));
+        }
+        if (response.settings.appearance) {
+          setAppearance(response.settings.appearance);
+          if (typeof response.settings.appearance.isDarkMode === "boolean") {
+            setIsDarkMode(response.settings.appearance.isDarkMode);
+          }
+        }
       }
     } catch {
       // Default to initial state
@@ -98,9 +124,20 @@ export default function SettingsPage() {
       setSaving(true);
       setError(null);
       await api.updateSettings({
-        ...settingsData,
-        notifications,
+        notification: notifications,
         privacy,
+        ai: {
+          model: settingsData.aiModel,
+          responseStyle: settingsData.responseStyle,
+          language: settingsData.language,
+          learningPace: settingsData.learningPace,
+          difficultyLevel: settingsData.difficultyLevel,
+          adaptiveLearning: settingsData.adaptiveLearning,
+        },
+        appearance: {
+          ...appearance,
+          isDarkMode,
+        },
       });
       triggerNotice("Settings updated successfully!");
     } catch {
