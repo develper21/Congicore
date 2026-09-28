@@ -6,7 +6,7 @@ import { processDocument } from "@/lib/document-processor";
 import { autoTagDocument } from "@/lib/openai";
 import { generateKnowledgeGraph } from "@/lib/graph-generator";
 import { generateDocumentEmbedding } from "@/lib/embeddings";
-import { uploadFileToS3, isS3Configured } from "@/lib/storage";
+import { uploadFile } from "@/lib/storage";
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,18 +31,9 @@ export async function POST(request: NextRequest) {
     const fileType = file.type.split("/")[1] || "unknown";
     const filesize = file.size;
 
-    // Upload to S3 if configured, otherwise use local path
-    let fileUrl: string;
-    let s3Key: string | undefined;
-
-    if (isS3Configured()) {
-      const uploadResult = await uploadFileToS3(buffer, file.name, file.type);
-      fileUrl = uploadResult.url;
-      s3Key = uploadResult.key;
-    } else {
-      fileUrl = `/upload/${file.name}`;
-      // In production, you'd save the file locally here
-    }
+    // Save the file locally (served from /public/uploads)
+    const uploadResult = await uploadFile(buffer, file.name, file.type);
+    const fileUrl = uploadResult.url;
 
     // Create document record with processing status
     const document = await Document.create({
