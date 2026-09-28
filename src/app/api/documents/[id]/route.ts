@@ -5,10 +5,11 @@ import { getUserIdFromRequest } from "@/lib/auth";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await connectDB();
+    const { id } = await params;
 
     const userId = getUserIdFromRequest(request);
     if (!userId) {
@@ -16,7 +17,7 @@ export async function GET(
     }
 
     const document = await Document.findOne({
-      _id: params.id,
+      _id: id,
       userId,
     });
 
@@ -39,10 +40,11 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await connectDB();
+    const { id } = await params;
 
     const userId = getUserIdFromRequest(request);
     if (!userId) {
@@ -52,7 +54,7 @@ export async function PUT(
     const body = await request.json();
     const { title, tags, content, status } = body;
     const document = await Document.findOneAndUpdate(
-      { _id: params.id, userId },
+      { _id: id, userId },
       {
         ...(title && { title }),
         ...(tags && { tags }),
@@ -87,18 +89,19 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await connectDB();
+    const { id } = await params;
 
     const userId = getUserIdFromRequest(request);
     if (!userId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const document = await Document.findOneAndUpdate({
-      _id: params.id,
+    const document = await Document.findOneAndDelete({
+      _id: id,
       userId,
     });
 
