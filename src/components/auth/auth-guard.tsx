@@ -16,7 +16,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   useEffect(() => {
     // Check if user is authenticated (in real app, check token/session)
     const checkAuth = () => {
-      const token = localStorage.getItem("auth-token");
+      const token = localStorage.getItem("token");
       if (token) {
         setIsAuthenticated(true);
       } else {
