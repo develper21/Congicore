@@ -1,0 +1,999 @@
+{
+  "info": {
+    "_postman_id": "b7e3a1c2-5f4d-4e8a-9c6b-1a2b3c4d5e6f",
+    "name": "AI Knowledge Twin — Congicore API",
+    "description": "Complete Postman collection for the AI Knowledge Twin (Congicore) API.\n\n## Setup\n1. Import this file into Postman (Import → File → postman.json).\n2. Set the `baseUrl` collection variable (default: `http://localhost:3000`).\n3. Start the dev server: `npm run dev`.\n4. Run **Auth → Login** first — its test script saves the JWT into the `token` collection variable automatically.\n5. IDs (`documentId`, `chatId`, `memoryId`) are auto-captured from list responses, so you can run the whole collection top-to-bottom with the Collection Runner.\n\n## Seeded demo account\n- Email: `demo@congicore.ai`\n- Password: `Demo@1234`\n- Seed it with: `npx tsx scripts/seed.ts --uri \"mongodb://127.0.0.1:27017/ai-knowledge-twin\"`\n\n## Notes\n- All protected routes need `Authorization: Bearer {{token}}` (already wired via collection auth).\n- `{{documentId}}`, `{{chatId}}`, `{{memoryId}}` are filled automatically when you run the list endpoints.\n- OpenAI-powered endpoints (chat message, summarize, autotag, embed) need a real `OPENAI_API_KEY` in `.env.local`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      { "key": "token", "value": "{{token}}", "type": "string" }
+    ]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000", "type": "string" },
+    { "key": "token", "value": "", "type": "string" },
+    { "key": "documentId", "value": "", "type": "string" },
+    { "key": "chatId", "value": "", "type": "string" },
+    { "key": "memoryId", "value": "", "type": "string" },
+    { "key": "query", "value": "attention", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"email\": \"john.doe@example.com\",\n  \"password\": \"Secure@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Create a new account. Returns `{ token, user }`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.token) pm.collectionVariables.set('token', json.token);",
+                  "pm.test('Registered', () => pm.expect(pm.response.code).to.be.oneOf([200, 201]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (seeds token)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demo@congicore.ai\",\n  \"password\": \"Demo@1234\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Login with the seeded demo account. The test script auto-saves the JWT to `{{token}}` for all other requests."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Login OK', () => pm.expect(pm.response.code).to.equal(200));",
+                  "pm.test('Token present', () => pm.expect(json).to.have.property('token'));",
+                  "if (json.token) pm.collectionVariables.set('token', json.token);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"email\": \"demo@congicore.ai\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/forgot-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "forgot-password"]
+            },
+            "description": "Always returns 200 with a generic message (no email enumeration)."
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"<jwt-reset-token>\",\n  \"password\": \"NewSecure@123\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/reset-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "reset-password"]
+            },
+            "description": "Reset password with a valid signed JWT token. Replace `{{token}}` collection auth with the reset token if testing for real."
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"demo@congicore.ai\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/verify-email",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "verify-email"]
+            },
+            "description": "Accepts `email` or `token`. Returns `{ verified: true }` on success."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "auth", "logout"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Dashboard & Analytics",
+      "item": [
+        {
+          "name": "Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "dashboard", "stats"]
+            },
+            "description": "Returns `{ stats: {...}, recentActivity: {...}, recentActivities: [...] }`. The dashboard page and RecentActivity component consume this."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Has stats', () => pm.expect(json.stats).to.exist);",
+                  "pm.test('Has recentActivities', () => pm.expect(json.recentActivities).to.be.an('array'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Learning Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "analytics"]
+            },
+            "description": "Returns `{ analytics, insights }` for the dashboard learning cards."
+          }
+        },
+        {
+          "name": "Global Search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/search?q={{query}}&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "search"],
+              "query": [
+                { "key": "q", "value": "{{query}}" },
+                { "key": "limit", "value": "10" }
+              ]
+            },
+            "description": "Hybrid keyword + semantic search across documents. Returns `{ query, results, count }`."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Documents",
+      "item": [
+        {
+          "name": "List Documents (captures documentId)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents"]
+            },
+            "description": "Optional query params: `search`, `type`, `status`. Auto-captures `{{documentId}}` from the first result."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('200 OK', () => pm.response.to.have.status(200));",
+                  "pm.test('Documents array', () => pm.expect(json.documents).to.be.an('array'));",
+                  "if (json.documents && json.documents.length) pm.collectionVariables.set('documentId', json.documents[0]._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Document (JSON)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Test Note.md\",\n  \"type\": \"text/markdown\",\n  \"size\": 1024,\n  \"fileUrl\": \"/upload/postman-test.md\",\n  \"tags\": [\"Testing\", \"Postman\"],\n  \"content\": \"This is test content created from Postman. Scaled dot-product attention is the core of the transformer.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents"]
+            },
+            "description": "Required: `title`, `type`, `size`, `fileUrl`. Returns 201 with `{ document }`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.document) pm.collectionVariables.set('documentId', json.document._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Single Document",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/{{documentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", "{{documentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Search Documents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/search?query={{query}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", "search"],
+              "query": [{ "key": "query", "value": "{{query}}" }]
+            },
+            "description": "Keyword search — note the param is `query` (not `q`)."
+          }
+        },
+        {
+          "name": "Update Document",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Test Note (updated).md\",\n  \"tags\": [\"Testing\", \"Updated\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/{{documentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", "{{documentId}}"]
+            }
+          }
+        },
+        {
+          "name": "Summarize Document (OpenAI)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/{{documentId}}/summarize",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", "{{documentId}}", "summarize"]
+            },
+            "description": "Generates an AI summary. Requires document `content` and a real `OPENAI_API_KEY`."
+          }
+        },
+        {
+          "name": "Auto-Tag Document (OpenAI)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/{{documentId}}/autotag",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", "{{documentId}}", "autotag"]
+            },
+            "description": "AI-generates up to 5 tags. Requires `content` + `OPENAI_API_KEY`."
+          }
+        },
+        {
+          "name": "Embed Document (OpenAI)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"documentId\": \"{{documentId}}\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/embed",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", "embed"]
+            },
+            "description": "Generates the vector embedding for semantic search. Needs a real `OPENAI_API_KEY`."
+          }
+        },
+        {
+          "name": "Upload File (multipart)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "file", "type": "file", "src": [] },
+                { "key": "title", "value": "Uploaded via Postman", "type": "text" },
+                { "key": "tags", "value": "postman,test", "type": "text" }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/upload",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "upload"]
+            },
+            "description": "Multipart upload. Select a file in the Body tab. Processing (extract → auto-tag → graph → embed) runs in the background."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.document) pm.collectionVariables.set('documentId', json.document._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Export Documents",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/export/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "export", "documents"]
+            }
+          }
+        },
+        {
+          "name": "Import Documents",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"documents\": [\n    {\n      \"title\": \"Imported Note.md\",\n      \"content\": \"Content imported from Postman.\",\n      \"tags\": [\"imported\"]\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/import/documents",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "import", "documents"]
+            },
+            "description": "Returns `{ importedCount, skippedCount }`. Skips duplicates (same title+content)."
+          }
+        },
+        {
+          "name": "Delete Document",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/documents/{{documentId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "documents", "{{documentId}}"]
+            },
+            "description": "Run last — deletes the captured document."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Chat (RAG Twin)",
+      "item": [
+        {
+          "name": "List Chats (captures chatId)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat"]
+            },
+            "description": "Returns the 50 most recent chats. Auto-captures `{{chatId}}`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Chats array', () => pm.expect(json.chats).to.be.an('array'));",
+                  "if (json.chats && json.chats.length) pm.collectionVariables.set('chatId', json.chats[0]._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Chat",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman Test Chat\",\n  \"firstMessage\": \"Hello twin!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat"]
+            },
+            "description": "Required: `title`. Optional: `firstMessage` (stored as the first user message)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.chat) pm.collectionVariables.set('chatId', json.chat._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Single Chat",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "{{chatId}}"]
+            }
+          }
+        },
+        {
+          "name": "Send Message (RAG pipeline, OpenAI)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"chatId\": \"{{chatId}}\",\n  \"message\": \"What is scaled dot-product attention?\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/message",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "message"]
+            },
+            "description": "Full RAG pipeline: embed query → semantic search docs (keyword fallback without OpenAI) → generate cited answer. Returns `{ response, sources, chat, usage }`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Has AI response', () => pm.expect(json).to.have.property('response'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Chat (append message)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": {\n    \"role\": \"user\",\n    \"content\": \"Manually appended via Postman\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "{{chatId}}"]
+            },
+            "description": "Appends a raw message without invoking the AI. Optional `title` rename."
+          }
+        },
+        {
+          "name": "Delete Chat",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/chat/{{chatId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "chat", "{{chatId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Memories & Spaced Repetition",
+      "item": [
+        {
+          "name": "List Memories (captures memoryId)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/memories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "memories"]
+            },
+            "description": "Optional query params: `category`, `tag`. Auto-captures `{{memoryId}}`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "pm.test('Memories array', () => pm.expect(json.memories).to.be.an('array'));",
+                  "if (json.memories && json.memories.length) pm.collectionVariables.set('memoryId', json.memories[0]._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Memory",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman memory: attention formula\",\n  \"content\": \"Attention(Q,K,V) = softmax(QKᵀ/√d_k)·V\",\n  \"category\": \"Deep Learning\",\n  \"importance\": 8,\n  \"tags\": [\"postman\", \"attention\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/memories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "memories"]
+            },
+            "description": "Required: `title`, `content`, `category`."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json.memory) pm.collectionVariables.set('memoryId', json.memory._id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Single Memory",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/memories/{{memoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "memories", "{{memoryId}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Memory",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Postman memory (renamed)\",\n  \"importance\": 9\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/memories/{{memoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "memories", "{{memoryId}}"]
+            }
+          }
+        },
+        {
+          "name": "Review Memory (SM-2)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"quality\": 4\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/memories/{{memoryId}}/review",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "memories", "{{memoryId}}", "review"]
+            },
+            "description": "SM-2 spaced repetition. `quality`: 0–5 (≥4 = correct recall). Returns updated easeFactor/interval/nextReview."
+          }
+        },
+        {
+          "name": "Export Memories",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/export/memories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "export", "memories"]
+            }
+          }
+        },
+        {
+          "name": "Import Memories",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"memories\": [\n    {\n      \"title\": \"Imported memory\",\n      \"content\": \"Content imported from Postman.\",\n      \"category\": \"Testing\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/import/memories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "import", "memories"]
+            }
+          }
+        },
+        {
+          "name": "Delete Memory",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/memories/{{memoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "memories", "{{memoryId}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Knowledge Graph",
+      "item": [
+        {
+          "name": "Get Graph",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/graph",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "graph"]
+            },
+            "description": "Returns `{ graph: { nodes, edges } }`. Creates an empty graph if none exists."
+          }
+        },
+        {
+          "name": "Update Graph (full replace)",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nodes\": [\n    { \"id\": \"n1\", \"label\": \"Transformers\", \"type\": \"concept\", \"category\": \"Deep Learning\", \"importance\": 9 },\n    { \"id\": \"n2\", \"label\": \"Attention\", \"type\": \"concept\", \"category\": \"Deep Learning\", \"importance\": 9 }\n  ],\n  \"edges\": [\n    { \"id\": \"e1\", \"source\": \"n1\", \"target\": \"n2\", \"relationship\": \"uses\", \"strength\": 0.9 }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/graph",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "graph"]
+            },
+            "description": "Upserts the whole graph (nodes + edges are replaced)."
+          }
+        },
+        {
+          "name": "Export Graph",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/export/graph",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "export", "graph"]
+            }
+          }
+        },
+        {
+          "name": "Import Graph",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nodes\": [\n    { \"id\": \"n1\", \"label\": \"Imported Node\", \"type\": \"concept\" }\n  ],\n  \"edges\": []\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/import/graph",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "import", "graph"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Profile & Settings",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile"]
+            },
+            "description": "Returns firstName, lastName, email, bio, avatar, settings, subscription, createdAt."
+          }
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Demo\",\n  \"lastName\": \"Twin\",\n  \"bio\": \"Updated via Postman — AI researcher building a second brain.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Get Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "settings"]
+            },
+            "description": "Returns `{ settings: { notification, privacy, ai, appearance } }` (schema uses singular `notification`)."
+          }
+        },
+        {
+          "name": "Update Settings",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notification\": {\n    \"email\": true,\n    \"push\": true,\n    \"weekly\": true,\n    \"aiInsights\": true\n  },\n  \"privacy\": {\n    \"dataCollection\": true,\n    \"analytics\": false,\n    \"personalization\": true,\n    \"publicProfile\": false\n  },\n  \"ai\": {\n    \"model\": \"GPT-4o (Recommended)\",\n    \"responseStyle\": \"Balanced\",\n    \"language\": \"English\",\n    \"learningPace\": \"Moderate\",\n    \"difficultyLevel\": \"Intermediate\",\n    \"adaptiveLearning\": true\n  },\n  \"appearance\": {\n    \"isDarkMode\": true,\n    \"accentColor\": \"blue\",\n    \"fontSize\": \"Medium\",\n    \"compactMode\": false\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "settings"]
+            },
+            "description": "Send only the sections you want to change. Use `notification` (singular) for notification prefs; `notifications` is also accepted."
+          }
+        },
+        {
+          "name": "Get Profile Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/settings/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "settings", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Update Profile Settings",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bio\": \"Updated via /api/settings/profile\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/settings/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "settings", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Get Notification Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "settings"]
+            }
+          }
+        },
+        {
+          "name": "Update Notification Settings",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emailEnabled\": true,\n  \"email\": \"demo@congicore.ai\",\n  \"reminderTime\": \"09:00\",\n  \"reminderDays\": [1, 2, 3, 4, 5]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/settings",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "notifications", "settings"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Billing",
+      "item": [
+        {
+          "name": "Get Billing Overview",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing"]
+            },
+            "description": "Returns `{ billing: { currentPlan, ... }, billingHistory: [...] }`."
+          }
+        },
+        {
+          "name": "Get Subscription",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/subscription",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "subscription"]
+            }
+          }
+        },
+        {
+          "name": "Checkout (upgrade plan)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan\": \"pro\",\n  \"cycle\": \"monthly\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/checkout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "checkout"]
+            },
+            "description": "Simulated checkout (Stripe integration pending). Body keys are `plan` + `cycle`. Creates an active Subscription record."
+          }
+        },
+        {
+          "name": "Verify Payment (checkout → success)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": \"<subscription-or-session-id>\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/verify",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "verify"]
+            },
+            "description": "Called by /billing/success after checkout. Verifies the user's latest active subscription."
+          }
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"action\": \"cancel\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/subscription",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "subscription"]
+            }
+          }
+        },
+        {
+          "name": "Change Plan",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": { "mode": "raw", "raw": "{\n  \"action\": \"change\",\n  \"plan\": \"enterprise\"\n}" },
+            "url": {
+              "raw": "{{baseUrl}}/api/billing/subscription",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "billing", "subscription"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Voice",
+      "item": [
+        {
+          "name": "Transcribe Audio",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                { "key": "audio", "type": "file", "src": [] }
+              ]
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/voice/transcribe",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "voice", "transcribe"]
+            },
+            "description": "Multipart: `audio` field (wav preferred). Returns `{ transcription, duration }`."
+          }
+        }
+      ]
+    }
+  ]
+}
