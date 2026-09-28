@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     }
 
     const user = await User.findById(userId).select(
-      "firstName lastName email bio avtar settings subscription createdAt",
+      "firstName lastName email bio avatar settings subscription createdAt",
     );
 
     if (!user) {
