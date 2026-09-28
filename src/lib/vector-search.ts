@@ -20,8 +20,19 @@ export async function semanticSearch(
   try {
     await connectDB();
 
-    // Generate embedding for the query
-    const queryEmbedding = await generateQueryEmbedding(query);
+    // Generate embedding for the query. If OpenAI is unavailable (missing or
+    // placeholder key), fall back to keyword-only search so the twin keeps
+    // working — retrieval quality just degrades gracefully.
+    let queryEmbedding: number[];
+    try {
+      queryEmbedding = await generateQueryEmbedding(query);
+    } catch (embedErr) {
+      console.warn(
+        'Query embedding unavailable, falling back to keyword search:',
+        embedErr instanceof Error ? embedErr.message : embedErr,
+      );
+      return keywordSearch(userId, query, limit);
+    }
 
     // Get all documents with embeddings for the user
     const documents = await Document.find({ 
@@ -64,6 +75,56 @@ export async function semanticSearch(
 }
 
 /**
+ * Keyword-only fallback used when OpenAI embeddings are unavailable
+ * (missing/placeholder API key). Splits the query into terms so partial
+ * matches still surface relevant documents.
+ */
+async function keywordSearch(
+  userId: string,
+  query: string,
+  limit: number
+): Promise<SearchResult[]> {
+  await connectDB();
+
+  const terms = query
+    .split(/\s+/)
+    .map((t) => t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .filter((t) => t.length > 1)
+    .slice(0, 6);
+
+  if (terms.length === 0) return [];
+
+  const docs = await Document.find({
+    userId,
+    $or: terms.flatMap((term) => [
+      { title: { $regex: term, $options: 'i' } },
+      { content: { $regex: term, $options: 'i' } },
+      { tags: { $in: [new RegExp(term, 'i')] } },
+    ]),
+  })
+    .select('_id title content')
+    .limit(limit);
+
+  // Score by number of matching terms (simple BM25-ish relevance)
+  const lowerQuery = query.toLowerCase();
+  return docs
+    .map((doc) => {
+      const haystack = `${doc.title} ${doc.content}`.toLowerCase();
+      const matches = terms.filter((t) =>
+        haystack.includes(t.replace(/\\/g, '')),
+      ).length;
+      return {
+        documentId: doc._id.toString(),
+        title: doc.title,
+        content: doc.content,
+        similarity: Math.min(0.9, 0.4 + matches * 0.15),
+      };
+    })
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, limit);
+}
+
+/**
  * Hybrid search combining keyword and semantic search
  */
 export async function hybridSearch(
@@ -86,7 +147,9 @@ export async function hybridSearch(
       .select('_id title content')
       .limit(limit);
 
-    // Perform semantic search
+    // Perform semantic search. If embeddings are unavailable, this already
+    // fell back to keywordSearch — do NOT call semanticSearch here to avoid
+    // infinite recursion (hybrid -> semantic -> hybrid -> ...).
     const semanticResults = await semanticSearch(userId, query, limit);
 
     // Combine and deduplicate results
