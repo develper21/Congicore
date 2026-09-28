@@ -6,10 +6,11 @@ import { getUserIdFromRequest } from "@/lib/auth";
 // GET - Get single chat
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await connectDB();
+    const { id } = await params;
 
     const userId = getUserIdFromRequest(request);
     if (!userId) {
@@ -17,7 +18,7 @@ export async function GET(
     }
 
     const chat = await Chat.findOne({
-      _id: params.id,
+      _id: id,
       userId,
     });
 
@@ -38,10 +39,11 @@ export async function GET(
 // PUT - Update chat (add message)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await connectDB();
+    const { id } = await params;
 
     const userId = getUserIdFromRequest(request);
     if (!userId) {
@@ -70,7 +72,7 @@ export async function PUT(
     }
 
     const chat = await Chat.findOneAndUpdate(
-      { _id: params.id, userId },
+      { _id: id, userId },
       updateData,
       { new: true },
     );
@@ -95,10 +97,11 @@ export async function PUT(
 // DELETE - Delete chat
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } },
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     await connectDB();
+    const { id } = await params;
 
     const userId = getUserIdFromRequest(request);
     if (!userId) {
@@ -106,7 +109,7 @@ export async function DELETE(
     }
 
     const chat = await Chat.findOneAndDelete({
-      _id: params.id,
+      _id: id,
       userId,
     });
 
