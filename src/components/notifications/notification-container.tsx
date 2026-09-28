@@ -24,7 +24,7 @@ const themeStyles = {
   },
   neon: {
     container: "fixed top-4 right-4 z-50 space-y-3",
-    item: "bg-black border border-cyan-500 shadow-[0_0_20px_rgba(0,255,255,0.5)] rounded-lg p-4 min-w-[320px] max-w-[420px]",
+    item: "bg-[#021618] border border-mintFoam shadow-[0_0_20px_rgba(214,255,203,0.3)] rounded-lg p-4 min-w-[320px] max-w-[420px]",
   },
   retro: {
     container: "fixed top-4 right-4 z-50 space-y-2",
