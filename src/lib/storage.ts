@@ -1,81 +1,79 @@
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { mkdir, writeFile, unlink } from "fs/promises";
+import path from "path";
 
-// Initialize S3 client
-const s3Client = new S3Client({
-  region: process.env.AWS_REGION || 'us-east-1',
-  credentials: {
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '',
-  },
-});
+// ------------------------------------------------------------------
+// Local file storage (replaces AWS S3)
+// Files are written to <project>/public/uploads so they are directly
+// served by Next.js at /uploads/<fileName>.
+// ------------------------------------------------------------------
 
-const BUCKET_NAME = process.env.S3_BUCKET_NAME || '';
+const UPLOAD_DIR = path.join(process.cwd(), "public", "uploads");
 
 export interface UploadResult {
   url: string;
   key: string;
 }
 
+/** Ensure the upload directory exists */
+async function ensureUploadDir() {
+  await mkdir(UPLOAD_DIR, { recursive: true });
+}
+
+/** Sanitize a filename: keep the base name, strip unsafe characters */
+function sanitizeFileName(fileName: string): string {
+  const base = path.basename(fileName);
+  return base.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-120);
+}
+
 /**
- * Upload file to S3
+ * Save a file to local uploads directory
  */
-export async function uploadFileToS3(
+export async function uploadFile(
   file: Buffer,
   fileName: string,
-  contentType: string
+  _contentType: string,
 ): Promise<UploadResult> {
   try {
-    const key = `uploads/${Date.now()}-${fileName}`;
+    await ensureUploadDir();
 
-    const command = new PutObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: key,
-      Body: file,
-      ContentType: contentType,
-    });
+    const safeName = sanitizeFileName(fileName);
+    const key = `${Date.now()}-${safeName}`;
+    const filePath = path.join(UPLOAD_DIR, key);
 
-    await s3Client.send(command);
+    await writeFile(filePath, file);
 
-    const url = `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com/${key}`;
+    // Publicly served by Next.js from /public
+    const url = `/uploads/${key}`;
 
     return { url, key };
   } catch (error) {
-    console.error('S3 upload error:', error);
-    throw new Error('Failed to upload file to S3');
+    console.error("Local file upload error:", error);
+    throw new Error("Failed to save file locally");
   }
 }
 
 /**
- * Delete file from S3
+ * Delete a locally stored file by its key
  */
-export async function deleteFileFromS3(key: string): Promise<void> {
+export async function deleteFile(key: string): Promise<void> {
   try {
-    const command = new DeleteObjectCommand({
-      Bucket: BUCKET_NAME,
-      Key: key,
-    });
-
-    await s3Client.send(command);
+    // Only delete files that are inside the uploads directory
+    const filePath = path.join(UPLOAD_DIR, path.basename(key));
+    await unlink(filePath);
   } catch (error) {
-    console.error('S3 delete error:', error);
-    throw new Error('Failed to delete file from S3');
+    // Missing file is fine — treat as already deleted
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      console.error("Local file delete error:", error);
+      throw new Error("Failed to delete local file");
+    }
   }
 }
 
 /**
- * Get file URL from S3 key
+ * Get the public URL for a stored file key
  */
-export function getS3FileUrl(key: string): string {
-  return `https://${BUCKET_NAME}.s3.${process.env.AWS_REGION || 'us-east-1'}.amazonaws.com/${key}`;
+export function getFileUrl(key: string): string {
+  return `/uploads/${path.basename(key)}`;
 }
 
-/**
- * Check if S3 is configured
- */
-export function isS3Configured(): boolean {
-  return !!(
-    process.env.AWS_ACCESS_KEY_ID &&
-    process.env.AWS_SECRET_ACCESS_KEY &&
-    process.env.S3_BUCKET_NAME
-  );
-}
+export { UPLOAD_DIR };
