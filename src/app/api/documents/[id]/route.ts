@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import connectDB from "@/lib/mongodb";
 import { Document } from "@/models";
 import { getUserIdFromRequest } from "@/lib/auth";
+import { deleteFile } from "@/lib/storage";
 
 export async function GET(
   request: NextRequest,
@@ -110,6 +111,15 @@ export async function DELETE(
         { error: "Document not found" },
         { status: 404 },
       );
+    }
+
+    // Best-effort cleanup of the locally stored file (/uploads/<key>)
+    if (document.fileUrl?.startsWith("/uploads/")) {
+      try {
+        await deleteFile(document.fileUrl.replace("/uploads/", ""));
+      } catch (cleanupError) {
+        console.warn("File cleanup skipped:", cleanupError);
+      }
     }
 
     return NextResponse.json(
