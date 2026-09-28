@@ -40,12 +40,14 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { notifications, privacy, ai, appearance } = body;
+    const { notification, notifications, privacy, ai, appearance } = body;
 
     const updateData: any = {};
 
-    if (notifications) {
-      updateData["settings.notifications"] = notifications;
+    // Accept both `notification` (schema shape) and `notifications` (page shape)
+    const notifPayload = notification || notifications;
+    if (notifPayload) {
+      updateData["settings.notification"] = notifPayload;
     }
 
     if (privacy) {
