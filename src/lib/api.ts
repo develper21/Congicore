@@ -117,8 +117,21 @@ class ApiClient {
     return this.request(`/api/documents/${id}`, { method: 'DELETE' });
   }
 
+  // AI document actions (OpenAI-powered)
+  async summarizeDocument(id: string) {
+    return this.request<{ message: string; summary: string; document: any }>(`/api/documents/${id}/summarize`, {
+      method: 'POST',
+    });
+  }
+
+  async autoTagDocument(id: string) {
+    return this.request<{ message: string; tags: string[]; document: any }>(`/api/documents/${id}/autotag`, {
+      method: 'POST',
+    });
+  }
+
   async searchDocuments(query: string) {
-    return this.request<{ documents: any[] }>(`/api/documents/search?q=${query}`);
+    return this.request<{ documents: any[] }>(`/api/documents/search?query=${encodeURIComponent(query)}`);
   }
 
   // Chat
@@ -134,6 +147,20 @@ class ApiClient {
     return this.request<{ chat: any }>('/api/chat', {
       method: 'POST',
       body: data,
+    });
+  }
+
+  // Send a message through the RAG twin pipeline
+  async sendMessage(chatId: string, message: string) {
+    return this.request<{
+      message: string;
+      response: string;
+      sources: Array<{ documentId: string; title: string; similarity: number }>;
+      chat: any;
+      usage?: { promptTokens: number; completionTokens: number; totalTokens: number };
+    }>('/api/chat/message', {
+      method: 'POST',
+      body: { chatId, message },
     });
   }
 
@@ -201,7 +228,11 @@ class ApiClient {
 
   // Billing
   async getBilling() {
-    return this.request<{ billing: any }>('/api/billing');
+    return this.request<{
+      billing: { currentPlan: string; status?: string; storageUsed?: number; storageLimit?: number };
+      billingHistory: Array<{ id: string; description: string; amount: number; date: string }>;
+      subscriptionDetails?: any;
+    }>('/api/billing');
   }
 
   async getSubscription() {
@@ -209,9 +240,9 @@ class ApiClient {
   }
 
   async createCheckoutSession(planId: string, billingCycle: 'monthly' | 'yearly') {
-    return this.request<{ sessionId: string; url: string }>('/api/billing/checkout', {
+    return this.request<{ message: string; subscription: any; checkoutUrl: string }>('/api/billing/checkout', {
       method: 'POST',
-      body: { planId, billingCycle },
+      body: { plan: planId, cycle: billingCycle },
     });
   }
 
@@ -224,7 +255,16 @@ class ApiClient {
 
   // Dashboard
   async getStats() {
-    return this.request<{ stats: any }>('/api/dashboard/stats');
+    return this.request<{
+      stats: any;
+      recentActivities: Array<{
+        _id: string;
+        title: string;
+        description: string;
+        type: 'document' | 'chat' | 'graph' | 'memory';
+        time: string;
+      }>;
+    }>('/api/dashboard/stats');
   }
 
   // Graph
