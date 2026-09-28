@@ -34,31 +34,31 @@ const typeIcons = {
 };
 
 const typeColors = {
-  success: "text-green-500",
-  error: "text-red-500",
-  warning: "text-yellow-500",
-  info: "text-blue-500",
-  document: "text-purple-500",
-  chat: "text-indigo-500",
-  memory: "text-pink-500",
-  system: "text-gray-500",
+  success: "text-mintFoam",
+  error: "text-rose-400",
+  warning: "text-skinSand",
+  info: "text-glassBlue",
+  document: "text-chromeViolet",
+  chat: "text-hyperCobalt",
+  memory: "text-glassBlue",
+  system: "text-softChrome",
 };
 
 const themeTextColors = {
   default: "text-foreground",
   minimal: "text-foreground",
-  colorful: "text-foreground",
-  glass: "text-white",
-  neon: "text-cyan-400",
+  colorful: "text-softChrome",
+  glass: "text-softChrome",
+  neon: "text-glassBlue",
   retro: "text-black",
 };
 
 const themeTitleColors = {
   default: "font-semibold text-foreground",
   minimal: "font-medium text-foreground",
-  colorful: "font-bold text-primary",
+  colorful: "font-bold text-chromeViolet",
   glass: "font-semibold text-white",
-  neon: "font-bold text-cyan-300",
+  neon: "font-bold text-mintFoam",
   retro: "font-bold text-black",
 };
 
