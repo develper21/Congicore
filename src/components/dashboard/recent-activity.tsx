@@ -53,7 +53,9 @@ export function RecentActivity() {
       setLoading(true);
       setError(null);
       const response = await api.getStats();
-      setActivities(response.stats?.recentActivities || []);
+      setActivities(
+        response.recentActivities || response.stats?.recentActivities || [],
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to fetch activities");
     } finally {
