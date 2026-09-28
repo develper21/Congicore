@@ -48,13 +48,48 @@ export async function GET(request: NextRequest) {
     // Get recent activity
     const recentDocuments = await Document.find({ userId })
       .sort({ uploadedAt: -1 })
-      .limit(5)
+      .limit(3)
       .select("title type uploadedAt status");
 
     const recentChats = await Chat.find({ userId })
       .sort({ updatedAt: -1 })
-      .limit(5)
+      .limit(3)
       .select("title updatedAt");
+
+    const recentMemories = await Memory.find({ userId })
+      .sort({ updatedAt: -1 })
+      .limit(2)
+      .select("title updatedAt category");
+
+    // Build unified activity feed consumed by the RecentActivity component
+    const recentActivities = [
+      ...recentDocuments.map((doc) => ({
+        _id: doc._id.toString(),
+        title: doc.title,
+        description: `${doc.type} • ${doc.status}`,
+        type: "document" as const,
+        time: doc.uploadedAt,
+      })),
+      ...recentChats.map((chat) => ({
+        _id: chat._id.toString(),
+        title: chat.title,
+        description: "AI conversation session",
+        type: "chat" as const,
+        time: chat.updatedAt || chat.createdAt,
+      })),
+      ...recentMemories.map((mem) => ({
+        _id: mem._id.toString(),
+        title: mem.title,
+        description: `${mem.category} memory`,
+        type: "memory" as const,
+        time: mem.updatedAt || mem.createdAt,
+      })),
+    ]
+      .filter((a) => a.time)
+      .sort(
+        (a, b) => new Date(b.time).getTime() - new Date(a.time).getTime(),
+      )
+      .slice(0, 8);
 
     // Calculate storage usage
     const documents = await Document.find({ userId }).select("size");
@@ -74,6 +109,7 @@ export async function GET(request: NextRequest) {
           documents: recentDocuments,
           chats: recentChats,
         },
+        recentActivities,
       },
       { status: 200 },
     );
