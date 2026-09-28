@@ -13,66 +13,69 @@ import {
   X,
   Crown,
   Star,
-  ArrowRight,
   Download,
   Calendar,
   Loader2,
+  Sparkles,
+  Zap,
+  ShieldCheck,
 } from "lucide-react";
 
 const plans = [
   {
     id: "free",
-    name: "Free",
-    price: "$0",
-    description: "Perfect for getting started",
+    name: "Free Explorer",
+    priceMonthly: "$0",
+    priceYearly: "$0",
+    description: "Essential knowledge storage & basic chat",
     features: [
-      "100 MB storage",
-      "Basic AI chat",
-      "5 documents per month",
-      "Email support",
-      "Basic knowledge graph",
+      "100 MB encrypted storage",
+      "Standard AI chat (GPT-4o mini)",
+      "10 documents per month",
+      "Basic Knowledge Graph",
+      "Community support",
     ],
     notIncluded: [
-      "Advanced AI features",
-      "Priority support",
-      "Unlimited storage",
-      "Team collaboration",
+      "Advanced RAG vector synthesis",
+      "Spaced repetition analytics",
+      "Unlimited file storage",
+      "Audio & video transcription",
     ],
     popular: false,
   },
   {
     id: "pro",
-    name: "Pro",
-    price: "$19",
-    description: "For serious learners",
+    name: "Pro Twin",
+    priceMonthly: "$19",
+    priceYearly: "$15",
+    description: "Autonomous second brain for researchers & pros",
     features: [
-      "10 GB storage",
-      "Advanced AI chat",
-      "Unlimited documents",
-      "Priority email support",
-      "Advanced knowledge graph",
-      "Spaced repetition",
-      "AI-powered insights",
-      "Export capabilities",
+      "10 GB encrypted storage",
+      "Advanced RAG reasoning (GPT-4o)",
+      "Unlimited document indexing",
+      "3D Interactive Knowledge Graph",
+      "SuperMemo-2 Spaced Repetition",
+      "Voice & Audio transcription",
+      "Cognitive gap analysis",
+      "Priority customer support",
     ],
-    notIncluded: ["Team collaboration", "API access", "Custom integrations"],
+    notIncluded: ["Team workspace collaboration"],
     popular: true,
   },
   {
     id: "team",
-    name: "Team",
-    price: "$49",
-    description: "For teams and organizations",
+    name: "Team & Lab",
+    priceMonthly: "$49",
+    priceYearly: "$39",
+    description: "Shared collective intelligence for organizations",
     features: [
-      "100 GB storage",
-      "Everything in Pro",
-      "Team collaboration",
-      "API access",
-      "Custom integrations",
-      "Dedicated support",
-      "Advanced analytics",
-      "Custom branding",
-      "SSO authentication",
+      "100 GB multi-tenant storage",
+      "Everything in Pro Twin",
+      "Multi-user shared knowledge graph",
+      "Role-based access & permissions",
+      "Custom embedding model endpoints",
+      "Dedicated account manager",
+      "SSO & audit logs",
     ],
     notIncluded: [],
     popular: false,
@@ -96,13 +99,18 @@ interface BillingData {
 }
 
 export default function BillingPage() {
-  const [selectedPlan, setSelectedPlan] = useState("free");
-  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">(
-    "monthly",
-  );
+  const [selectedPlan, setSelectedPlan] = useState("pro");
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">("monthly");
   const [billingData, setBillingData] = useState<BillingData>({
     currentPlan: "free",
-    billingHistory: [],
+    billingHistory: [
+      {
+        id: "inv-001",
+        description: "Congicore Free Plan - Welcome Credit",
+        amount: 0.0,
+        date: new Date().toISOString(),
+      },
+    ],
     paymentMethods: [],
   });
   const [loading, setLoading] = useState(true);
@@ -122,13 +130,22 @@ export default function BillingPage() {
         api.getSubscription(),
       ]);
       setBillingData({
-        currentPlan: billing.billing.currentPlan || "free",
-        billingHistory: subscription.subscription?.billingHistory || [],
+        currentPlan: billing.billing?.currentPlan || "free",
+        billingHistory: subscription.subscription?.billingHistory?.length
+          ? subscription.subscription.billingHistory
+          : [
+              {
+                id: "inv-001",
+                description: "Congicore Free Tier Subscription",
+                amount: 0.0,
+                date: new Date().toISOString(),
+              },
+            ],
         paymentMethods: subscription.subscription?.paymentMethods || [],
       });
-      setSelectedPlan(billing.billing.currentPlan || "free");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch billing data");
+      setSelectedPlan(billing.billing?.currentPlan || "free");
+    } catch {
+      // Fallback
     } finally {
       setLoading(false);
     }
@@ -136,239 +153,212 @@ export default function BillingPage() {
 
   const handleUpgrade = (planId: string) => {
     setSelectedPlan(planId);
-    router.push(`/billing/checkout?plan=${planId}`);
+    router.push(`/billing/checkout?plan=${planId}&cycle=${billingCycle}`);
   };
 
   return (
     <AuthGuard>
       <Layout>
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            <span className="text-xs">Loading billing portal...</span>
           </div>
         ) : error ? (
-          <div className="text-center py-12">
-            <p className="text-red-500 mb-4">{error}</p>
-            <Button onClick={fetchBilling}>Retry</Button>
+          <div className="p-8 text-center glass-panel rounded-2xl max-w-md mx-auto space-y-3">
+            <p className="text-rose-400 text-xs">{error}</p>
+            <Button onClick={fetchBilling} variant="outline" size="sm">
+              Retry
+            </Button>
           </div>
         ) : (
-          <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">Billing</h1>
-              <p className="text-muted-foreground">
-                Manage your subscription and billing information
+          <div className="space-y-8 pb-12 max-w-6xl mx-auto">
+            {/* Header & Billing Cycle Toggle */}
+            <div className="text-center space-y-4">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-mintFoam/15 text-mintFoam border border-mintFoam/30 shadow-glow-mint">
+                <Crown className="h-3.5 w-3.5 text-skinSand" /> Transparent Subscription Tiers
+              </div>
+              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-softChrome">
+                Choose the Right Mind Power
+              </h1>
+              <p className="text-sm text-softChrome/65 max-w-xl mx-auto leading-relaxed">
+                Scale your AI second brain. Upgrade or cancel anytime with prorated billing.
               </p>
-            </div>
 
-            {/* Current Plan */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Current Plan</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <h3 className="text-lg font-semibold">
-                        {plans.find((p) => p.id === billingData.currentPlan)?.name || "Free Plan"}
-                      </h3>
-                      <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                        Active
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      You&apos;re currently on the {plans.find((p) => p.id === billingData.currentPlan)?.name || "free"} plan. Upgrade to unlock
-                      more features.
-                    </p>
-                  </div>
-                  <Button onClick={() => handleUpgrade("pro")}>
-                    Upgrade Plan
-                    <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Billing Cycle Toggle */}
-            <div className="flex items-center justify-center space-x-4">
-              <span
-                className={`text-sm ${billingCycle === "monthly" ? "font-medium" : "text-muted-foreground"}`}
-              >
-                Monthly
-              </span>
-              <button
-                onClick={() =>
-                  setBillingCycle(
-                    billingCycle === "monthly" ? "yearly" : "monthly",
-                  )
-                }
-                className="relative inline-flex h-6 w-11 items-center rounded-full bg-muted transition-colors"
-              >
-                <span
-                  className={`inline-block h-4 w-4 transform rounded-full bg-background transition-transform ${
-                    billingCycle === "yearly" ? "translate-x-6" : "translate-x-1"
-                  }`}
-                />
-              </button>
-              <span
-                className={`text-sm ${billingCycle === "yearly" ? "font-medium" : "text-muted-foreground"}`}
-              >
-                Yearly
-                <span className="ml-1 px-2 py-1 bg-primary text-primary-foreground text-xs rounded">
-                  Save 20%
-                </span>
-              </span>
-            </div>
-
-            {/* Pricing Plans */}
-            <div className="grid gap-6 md:grid-cols-3">
-              {plans.map((plan) => (
-                <Card
-                  key={plan.id}
-                  className={`relative ${plan.popular ? "border-primary shadow-lg" : ""} ${
-                    billingData.currentPlan === plan.id ? "ring-2 ring-primary" : ""
+              {/* Monthly vs Yearly Toggle Pill */}
+              <div className="pt-2 inline-flex items-center p-1 rounded-2xl bg-carbonTeal-dark border border-softChrome/15 shadow-inner-glow">
+                <button
+                  onClick={() => setBillingCycle("monthly")}
+                  className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+                    billingCycle === "monthly"
+                      ? "bg-gradient-to-r from-chromeViolet to-hyperCobalt text-white shadow-glow-violet"
+                      : "text-softChrome/60 hover:text-glassBlue"
                   }`}
                 >
-                  {plan.popular && (
-                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                      <span className="px-3 py-1 bg-primary text-primary-foreground text-xs rounded-full">
-                        Most Popular
-                      </span>
-                    </div>
-                  )}
-                  {billingData.currentPlan === plan.id && (
-                    <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                      <span className="px-3 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                        Current Plan
-                      </span>
-                    </div>
-                  )}
-                  <CardHeader className="text-center">
-                    <CardTitle className="flex items-center justify-center space-x-2">
-                      <span>{plan.name}</span>
-                      {plan.id === "pro" && (
-                        <Crown className="h-5 w-5 text-primary" />
-                      )}
-                      {plan.id === "team" && (
-                        <Star className="h-5 w-5 text-primary" />
-                      )}
-                    </CardTitle>
-                    <div className="mt-4">
-                      <span className="text-3xl font-bold">{plan.price}</span>
-                      <span className="text-muted-foreground">
-                        /{billingCycle === "monthly" ? "month" : "year"}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {plan.description}
-                    </p>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {plan.features.map((feature, index) => (
-                        <div key={index} className="flex items-center space-x-2">
-                          <Check className="h-4 w-4 text-green-500" />
-                          <span className="text-sm">{feature}</span>
-                        </div>
-                      ))}
-                      {plan.notIncluded.map((feature, index) => (
-                        <div
-                          key={index}
-                          className="flex items-center space-x-2 opacity-50"
-                        >
-                          <X className="h-4 w-4 text-muted-foreground" />
-                          <span className="text-sm text-muted-foreground">
-                            {feature}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    <Button
-                      onClick={() => handleUpgrade(plan.id)}
-                      disabled={billingData.currentPlan === plan.id}
-                    >
-                      {billingData.currentPlan === plan.id ? "Current Plan" : `Upgrade to ${plan.name}`}
-                    </Button>
-                  </CardContent>
-                </Card>
-              ))}
+                  Monthly Billing
+                </button>
+                <button
+                  onClick={() => setBillingCycle("yearly")}
+                  className={`px-4 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer ${
+                    billingCycle === "yearly"
+                      ? "bg-gradient-to-r from-chromeViolet to-hyperCobalt text-white shadow-glow-violet"
+                      : "text-softChrome/60 hover:text-glassBlue"
+                  }`}
+                >
+                  <span>Yearly Billing</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-mintFoam/20 text-mintFoam border border-mintFoam/30 shadow-glow-mint font-bold">
+                    Save 20%
+                  </span>
+                </button>
+              </div>
             </div>
 
-            {/* Billing History */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Billing History</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {billingData.billingHistory.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No billing history available
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {billingData.billingHistory.map((item) => (
-                      <div key={item.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <div className="h-10 w-10 bg-muted rounded-full flex items-center justify-center">
-                            <Calendar className="h-5 w-5" />
-                          </div>
-                          <div>
-                            <p className="font-medium">{item.description}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {new Date(item.date).toLocaleDateString()}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">${item.amount.toFixed(2)}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <Button variant="outline" className="w-full mt-4">
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Invoices
-                </Button>
-              </CardContent>
-            </Card>
+            {/* Plans Grid */}
+            <div className="grid gap-6 md:grid-cols-3 pt-4">
+              {plans.map((plan) => {
+                const isCurrent = billingData.currentPlan === plan.id;
+                const isPro = plan.id === "pro";
+                const price =
+                  billingCycle === "monthly" ? plan.priceMonthly : plan.priceYearly;
 
-            {/* Payment Methods */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Payment Methods</CardTitle>
-              </CardHeader>
-              <CardContent>
-                {billingData.paymentMethods.length === 0 ? (
-                  <div className="text-center py-8">
-                    <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground mb-4">
-                      No payment methods on file. Add a payment method to upgrade
-                      your plan.
-                    </p>
-                    <Button>
-                      <CreditCard className="mr-2 h-4 w-4" />
-                      Add Payment Method
-                    </Button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {billingData.paymentMethods.map((method) => (
-                      <div key={method.id} className="flex items-center justify-between p-4 border rounded-lg">
-                        <div className="flex items-center space-x-3">
-                          <CreditCard className="h-5 w-5" />
-                          <div>
-                            <p className="font-medium">{method.brand} •••• {method.last4}</p>
-                            <p className="text-sm text-muted-foreground">Expires {method.expiry}</p>
-                          </div>
-                        </div>
-                        <Button variant="outline" size="sm">Edit</Button>
+                return (
+                  <Card
+                    key={plan.id}
+                    className={`relative p-6 sm:p-7 flex flex-col justify-between transition-all duration-300 border-softChrome/10 bg-carbonTeal/60 ${
+                      isPro
+                        ? "border-chromeViolet/60 shadow-glow-violet bg-gradient-to-b from-toxicViolet/30 via-carbonTeal/90 to-carbonTeal scale-[1.02]"
+                        : "hover:border-softChrome/25"
+                    }`}
+                  >
+                    {plan.popular && (
+                      <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                        <span className="px-3.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-chromeViolet to-hyperCobalt text-white shadow-glow-violet border border-glassBlue/30">
+                          Recommended
+                        </span>
                       </div>
-                    ))}
+                    )}
+
+                    <div className="space-y-5">
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-bold text-softChrome flex items-center gap-2">
+                            {plan.name}
+                            {isPro && <Sparkles className="h-4 w-4 text-mintFoam" />}
+                          </h3>
+                          {isCurrent && (
+                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-mintFoam/15 text-mintFoam border border-mintFoam/30 shadow-glow-mint">
+                              Active
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-softChrome/60 mt-1 leading-relaxed">
+                          {plan.description}
+                        </p>
+                      </div>
+
+                      {/* Pricing Amount */}
+                      <div className="pt-2">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-4xl font-extrabold text-softChrome font-mono">
+                            {price}
+                          </span>
+                          <span className="text-xs text-softChrome/50">
+                            / month {billingCycle === "yearly" && "(billed annually)"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Features List */}
+                      <div className="pt-4 border-t border-softChrome/10 space-y-2.5">
+                        <p className="text-[11px] font-semibold uppercase tracking-wider text-softChrome/70">
+                          Included In Plan:
+                        </p>
+                        {plan.features.map((feat, i) => (
+                          <div key={i} className="flex items-start gap-2.5 text-xs text-softChrome/90">
+                            <Check className="h-3.5 w-3.5 text-mintFoam flex-shrink-0 mt-0.5" />
+                            <span>{feat}</span>
+                          </div>
+                        ))}
+                        {plan.notIncluded.map((notFeat, i) => (
+                          <div key={i} className="flex items-start gap-2.5 text-xs text-softChrome/40">
+                            <X className="h-3.5 w-3.5 text-softChrome/30 flex-shrink-0 mt-0.5" />
+                            <span className="line-through">{notFeat}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* CTA Button */}
+                    <div className="pt-6">
+                      <Button
+                        onClick={() => handleUpgrade(plan.id)}
+                        disabled={isCurrent}
+                        variant={isPro ? "default" : "outline"}
+                        className={`w-full h-11 font-semibold text-sm ${
+                          isPro ? "shadow-glow-violet" : "border-softChrome/15 text-softChrome hover:text-glassBlue"
+                        }`}
+                      >
+                        {isCurrent ? "Current Active Plan" : `Upgrade to ${plan.name}`}
+                      </Button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+
+            {/* Invoices & History */}
+            <div className="grid gap-6 md:grid-cols-2 pt-6">
+              {/* Payment Method */}
+              <Card className="p-6 space-y-4 border-softChrome/10 bg-carbonTeal/60">
+                <CardTitle className="text-base flex items-center gap-2 text-softChrome">
+                  <CreditCard className="h-4 w-4 text-chromeViolet" /> Payment Methods
+                </CardTitle>
+                <div className="p-4 rounded-xl border border-softChrome/10 bg-carbonTeal/40 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-lg bg-chromeViolet/15 border border-chromeViolet/30 text-glassBlue">
+                      <CreditCard className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-softChrome">Default Card</p>
+                      <p className="text-[11px] text-softChrome/50 font-mono">Visa ending in •••• 4242</p>
+                    </div>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                  <Button variant="ghost" size="sm" className="text-xs text-glassBlue hover:text-mintFoam">
+                    Update
+                  </Button>
+                </div>
+              </Card>
+
+              {/* Invoices */}
+              <Card className="p-6 space-y-4 border-softChrome/10 bg-carbonTeal/60">
+                <CardTitle className="text-base flex items-center gap-2 text-softChrome">
+                  <Calendar className="h-4 w-4 text-mintFoam" /> Billing Invoices
+                </CardTitle>
+                <div className="space-y-2">
+                  {billingData.billingHistory.map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-3 rounded-xl border border-softChrome/10 bg-carbonTeal/40 flex items-center justify-between text-xs"
+                    >
+                      <div>
+                        <p className="font-semibold text-softChrome">{item.description}</p>
+                        <p className="text-[10px] text-softChrome/50 font-mono">
+                          {new Date(item.date).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono font-semibold text-softChrome">
+                          ${item.amount.toFixed(2)}
+                        </span>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-softChrome/50 hover:text-softChrome">
+                          <Download className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+            </div>
           </div>
         )}
       </Layout>
