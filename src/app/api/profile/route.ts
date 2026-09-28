@@ -48,7 +48,7 @@ export async function PUT(request: NextRequest) {
     if (bio !== undefined) updateData.bio = bio;
     if (avatar !== undefined) updateData.avatar = avatar;
 
-    const user = await User.fineByIdAndUpdate(userId, updateData).select(
+    const user = await User.findByIdAndUpdate(userId, updateData).select(
       "firstName lastName email bio avatar ",
     );
 
