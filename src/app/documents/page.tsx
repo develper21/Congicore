@@ -123,11 +123,37 @@ export default function DocumentsPage() {
   };
 
   const handleSummarize = async (id: string) => {
-    triggerNotice("AI Summary generated and linked to Memory Vault!");
+    if (id.startsWith("demo-")) {
+      triggerNotice("Demo document — upload a real file first");
+      return;
+    }
+    try {
+      triggerNotice("Generating AI summary...");
+      const res = await api.summarizeDocument(id);
+      setDocuments((prev) =>
+        prev.map((doc) => (doc._id === id ? { ...doc, ...res.document } : doc)),
+      );
+      triggerNotice("AI Summary generated and linked to Memory Vault!");
+    } catch {
+      triggerNotice("Failed to generate summary. Is the API key set?");
+    }
   };
 
   const handleAutoTag = async (id: string) => {
-    triggerNotice("AI automatically identified 3 semantic tags!");
+    if (id.startsWith("demo-")) {
+      triggerNotice("Demo document — upload a real file first");
+      return;
+    }
+    try {
+      triggerNotice("Auto-tagging with AI...");
+      const res = await api.autoTagDocument(id);
+      setDocuments((prev) =>
+        prev.map((doc) => (doc._id === id ? { ...doc, ...res.document } : doc)),
+      );
+      triggerNotice("AI automatically identified semantic tags!");
+    } catch {
+      triggerNotice("Failed to auto-tag. Is the API key set?");
+    }
   };
 
   const triggerNotice = (msg: string) => {
