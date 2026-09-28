@@ -24,21 +24,21 @@ export function NotificationDemo() {
       message:
         "Machine Learning Basics.pdf has been successfully processed and indexed.",
       type: "success" as const,
-      icon: <CheckCircle className="h-5 w-5 text-green-500" />,
+      icon: <CheckCircle className="h-5 w-5 text-mintFoam" />,
     },
     {
       title: "Upload Failed",
       message:
         "Unable to process the uploaded file. Please check the format and try again.",
       type: "error" as const,
-      icon: <AlertCircle className="h-5 w-5 text-red-500" />,
+      icon: <AlertCircle className="h-5 w-5 text-rose-400" />,
     },
     {
       title: "Storage Warning",
       message:
         "You're running low on storage space. Consider upgrading your plan.",
       type: "warning" as const,
-      icon: <AlertTriangle className="h-5 w-5 text-yellow-500" />,
+      icon: <AlertTriangle className="h-5 w-5 text-skinSand" />,
       action: {
         label: "Upgrade Now",
         onClick: () => console.log("Upgrade clicked"),
@@ -48,25 +48,25 @@ export function NotificationDemo() {
       title: "AI Insight Available",
       message: "New learning pattern detected in your recent activity.",
       type: "info" as const,
-      icon: <Info className="h-5 w-5 text-blue-500" />,
+      icon: <Info className="h-5 w-5 text-glassBlue" />,
     },
     {
       title: "New Document Added",
       message: "Research Paper.pdf has been added to your knowledge base.",
       type: "document" as const,
-      icon: <FileText className="h-5 w-5 text-purple-500" />,
+      icon: <FileText className="h-5 w-5 text-chromeViolet" />,
     },
     {
       title: "Chat Response Ready",
       message: "Your AI twin has prepared a response to your query.",
       type: "chat" as const,
-      icon: <MessageSquare className="h-5 w-5 text-indigo-500" />,
+      icon: <MessageSquare className="h-5 w-5 text-hyperCobalt" />,
     },
     {
       title: "Memory Review Due",
       message: "3 memories are ready for review to improve retention.",
       type: "memory" as const,
-      icon: <Brain className="h-5 w-5 text-pink-500" />,
+      icon: <Brain className="h-5 w-5 text-glassBlue" />,
       action: {
         label: "Review Now",
         onClick: () => console.log("Review clicked"),
@@ -76,7 +76,7 @@ export function NotificationDemo() {
       title: "System Update",
       message: "New features have been added to your knowledge twin.",
       type: "system" as const,
-      icon: <Settings className="h-5 w-5 text-gray-500" />,
+      icon: <Settings className="h-5 w-5 text-softChrome" />,
     },
   ];
 
