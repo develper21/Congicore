@@ -24,28 +24,21 @@ export async function ragResponse(
   query: string,
   chatHistory: ChatMessage[]
 ): Promise<RAGResponse> {
+  // Step 1: Retrieve relevant documents using semantic search
+  // (falls back to keyword search internally when OpenAI is unavailable)
+  const relevantDocs = await semanticSearch(userId, query, 5);
+
+  // Step 2: Build context from relevant documents
+  const context = relevantDocs
+    .map((doc, index) => 
+      `[Document ${index + 1}: ${doc.title}]\n${doc.content.substring(0, 1000)}...`
+    )
+    .join('\n\n');
+
+  // Step 3: Generate AI response with context.
+  // If OpenAI is unavailable (missing/placeholder key), return an extractive
+  // fallback answer built from the retrieved documents so the twin still works.
   try {
-    // Step 1: Retrieve relevant documents using semantic search
-    const relevantDocs = await semanticSearch(userId, query, 5);
-
-    if (relevantDocs.length === 0) {
-      // No relevant documents found, generate response without context
-      const response = await generateChatResponse(chatHistory);
-      return {
-        content: response.content,
-        sources: [],
-        usage: response.usage,
-      };
-    }
-
-    // Step 2: Build context from relevant documents
-    const context = relevantDocs
-      .map((doc, index) => 
-        `[Document ${index + 1}: ${doc.title}]\n${doc.content.substring(0, 1000)}...`
-      )
-      .join('\n\n');
-
-    // Step 3: Generate AI response with context
     const systemMessage: ChatMessage = {
       role: 'system',
       content: `You are an AI Knowledge Twin assistant. Use the following context from the user's knowledge base to answer questions accurately. If the context doesn't contain relevant information, say so honestly.\n\nContext:\n${context}\n\nWhen referencing information from the documents, cite the source by mentioning the document title.`,
@@ -64,8 +57,29 @@ export async function ragResponse(
       usage: response.usage,
     };
   } catch (error) {
-    console.error('RAG pipeline error:', error);
-    throw new Error('Failed to generate RAG response');
+    console.warn(
+      'AI generation unavailable, using extractive fallback:',
+      error instanceof Error ? error.message : error,
+    );
+    // Extractive fallback: surface the most relevant passages from the user's
+    // own documents. This keeps the twin useful without an OpenAI key.
+    const fallbackParts = relevantDocs.slice(0, 3).map((doc, i) => {
+      const snippet = doc.content.replace(/\s+/g, ' ').trim().substring(0, 350);
+      return `${i + 1}. From "${doc.title}" (relevance ${(doc.similarity * 100).toFixed(0)}%):\n"${snippet}…"`;
+    });
+
+    const fallbackContent = relevantDocs.length
+      ? `Here's what I found in your knowledge base for "${query}":\n\n${fallbackParts.join('\n\n')}\n\n(Connect a real OPENAI_API_KEY in .env.local to unlock full AI-synthesized answers — retrieval is already working.)`
+      : `I couldn't find anything in your knowledge base about "${query}". Try uploading related documents first.`;
+
+    return {
+      content: fallbackContent,
+      sources: relevantDocs.map(doc => ({
+        documentId: doc.documentId,
+        title: doc.title,
+        similarity: doc.similarity,
+      })),
+    };
   }
 }
 
