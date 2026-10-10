@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "tsx --test 'tests/**/*.test.ts'",
+    "test": "find tests -name '*.test.ts' | sort -u | xargs tsx --test",
     "seed": "tsx scripts/seed.ts",
     "seed:keep": "tsx scripts/seed.ts --keep",
     "verify:postman": "tsx scripts/verify-postman.ts",
