@@ -17,9 +17,26 @@ export const OPENAI_CHAT_MODEL = process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini';
 export const OPENAI_EMBEDDING_MODEL =
   process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
 
-const openai = new OpenAI({
-  apiKey: OPENAI_API_KEY,
-});
+// Create the client lazily: Next.js imports every API route module during
+// `next build` (page-data collection) where OPENAI_API_KEY may legitimately
+// be absent. `new OpenAI()` throws at module-evaluation time without a key,
+// which used to fail the build. Instantiating on first real API call keeps
+// the build green; call sites already handle AI unavailability with
+// graceful fallbacks.
+let _client: OpenAI | null = null;
+
+export function getClient(): OpenAI {
+  if (!_client) {
+    const apiKey = process.env.OPENAI_API_KEY;
+    if (!apiKey) {
+      throw new Error(
+        'The OPENAI_API_KEY environment variable is missing or empty; either provide it, or instantiate the OpenAI client with an apiKey option.'
+      );
+    }
+    _client = new OpenAI({ apiKey });
+  }
+  return _client;
+}
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant';
@@ -56,7 +73,7 @@ export async function generateChatResponse(
 
     const allMessages = [systemMessage, ...messages];
 
-    const completion = await openai.chat.completions.create({
+    const completion = await getClient().chat.completions.create({
       model: OPENAI_CHAT_MODEL,
       messages: allMessages,
       temperature: 0.7,
@@ -84,7 +101,7 @@ export async function generateChatResponse(
  */
 export async function generateEmbedding(text: string): Promise<number[]> {
   try {
-    const response = await openai.embeddings.create({
+    const response = await getClient().embeddings.create({
       model: OPENAI_EMBEDDING_MODEL,
       input: text,
     });
@@ -101,7 +118,7 @@ export async function generateEmbedding(text: string): Promise<number[]> {
  */
 export async function summarizeDocument(content: string): Promise<string> {
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getClient().chat.completions.create({
       model: OPENAI_CHAT_MODEL,
       messages: [
         {
@@ -129,7 +146,7 @@ export async function summarizeDocument(content: string): Promise<string> {
  */
 export async function extractConcepts(content: string): Promise<string[]> {
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getClient().chat.completions.create({
       model: OPENAI_CHAT_MODEL,
       messages: [
         {
@@ -159,7 +176,7 @@ export async function extractConcepts(content: string): Promise<string[]> {
  */
 export async function autoTagDocument(content: string, title: string): Promise<string[]> {
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await getClient().chat.completions.create({
       model: OPENAI_CHAT_MODEL,
       messages: [
         {
@@ -184,4 +201,4 @@ export async function autoTagDocument(content: string, title: string): Promise<s
   }
 }
 
-export default openai;
+export default getClient;

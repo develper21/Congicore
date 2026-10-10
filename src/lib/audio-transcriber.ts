@@ -1,4 +1,4 @@
-import openai from './openai';
+import { getClient } from './openai';
 import fs from 'fs';
 
 export interface AudioTranscriptionResult {
@@ -12,7 +12,7 @@ export interface AudioTranscriptionResult {
 export async function transcribeAudio(filePath: string): Promise<AudioTranscriptionResult> {
   try {
     const file = fs.createReadStream(filePath);
-    const transcription = await openai.audio.transcriptions.create({
+    const transcription = await getClient().audio.transcriptions.create({
       file: file,
       model: 'whisper-1',
     });
