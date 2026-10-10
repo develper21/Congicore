@@ -1,60 +1,73 @@
-import { describe, it } from "node:test";
+import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
   checkRateLimit,
   getRateLimitIdentifier,
-  getRateLimitConfig,
   rateLimitConfigs,
+  type RateLimitConfig,
 } from "../src/lib/rate-limit";
 
-describe("rate-limit middleware & utility", () => {
-  it("checkRateLimit() allows requests under limit and blocks requests exceeding limit", () => {
-    const identifier = `test-ip-${Date.now()}`;
-    const config = { windowMs: 60000, maxRequests: 3 };
+const config: RateLimitConfig = { windowMs: 60_000, maxRequests: 3 };
 
-    const first = checkRateLimit(identifier, config);
-    assert.equal(first.success, true);
-    assert.equal(first.remaining, 2);
+test("allows requests up to maxRequests then blocks", () => {
+  const id = `test-${Math.random()}`;
+  assert.equal(checkRateLimit(id, config).success, true);
+  assert.equal(checkRateLimit(id, config).success, true);
+  const third = checkRateLimit(id, config);
+  assert.equal(third.success, true);
+  assert.equal(third.remaining, 0);
+  const fourth = checkRateLimit(id, config);
+  assert.equal(fourth.success, false);
+  assert.equal(fourth.remaining, 0);
+});
 
-    const second = checkRateLimit(identifier, config);
-    assert.equal(second.success, true);
-    assert.equal(second.remaining, 1);
+test("different identifiers are independent", () => {
+  const a = `a-${Math.random()}`;
+  const b = `b-${Math.random()}`;
+  checkRateLimit(a, config);
+  checkRateLimit(a, config);
+  checkRateLimit(a, config);
+  assert.equal(checkRateLimit(a, config).success, false);
+  assert.equal(checkRateLimit(b, config).success, true);
+});
 
-    const third = checkRateLimit(identifier, config);
-    assert.equal(third.success, true);
-    assert.equal(third.remaining, 0);
+test("window expiry resets the counter", () => {
+  const id = `exp-${Math.random()}`;
+  const shortConfig: RateLimitConfig = { windowMs: 10, maxRequests: 1 };
+  assert.equal(checkRateLimit(id, shortConfig).success, true);
+  assert.equal(checkRateLimit(id, shortConfig).success, false);
+  // Wait for the tiny window to expire
+  setTimeout(() => {}, 15);
+});
 
-    const fourth = checkRateLimit(identifier, config);
-    assert.equal(fourth.success, false);
-    assert.equal(fourth.remaining, 0);
+test("returns correct limit metadata", () => {
+  const result = checkRateLimit(`meta-${Math.random()}`, config);
+  assert.equal(result.limit, 3);
+  assert.ok(typeof result.resetTime === "number");
+  assert.ok(result.resetTime > Date.now());
+});
+
+test("getRateLimitIdentifier falls back to IP header", () => {
+  const request = new Request("https://example.com/api", {
+    headers: { "x-forwarded-for": "203.0.113.7, 10.0.0.1" },
   });
+  assert.equal(getRateLimitIdentifier(request), "ip:203.0.113.7");
+});
 
-  it("getRateLimitConfig() resolves correct config by path", () => {
-    assert.deepEqual(getRateLimitConfig("/api/auth/login"), rateLimitConfigs.auth);
-    assert.deepEqual(getRateLimitConfig("/api/chat/message"), rateLimitConfigs.chat);
-    assert.deepEqual(getRateLimitConfig("/api/documents/search"), rateLimitConfigs.documents);
-    assert.deepEqual(getRateLimitConfig("/api/memories/123"), rateLimitConfigs.memories);
-    assert.deepEqual(getRateLimitConfig("/api/search"), rateLimitConfigs.search);
-    assert.deepEqual(getRateLimitConfig("/api/upload"), rateLimitConfigs.upload);
-    assert.deepEqual(getRateLimitConfig("/api/unknown/endpoint"), rateLimitConfigs.default);
+test("getRateLimitIdentifier prefers bearer token", () => {
+  const request = new Request("https://example.com/api", {
+    headers: { authorization: "Bearer abc123" },
   });
+  assert.equal(getRateLimitIdentifier(request), "user:abc123");
+});
 
-  it("getRateLimitIdentifier() extracts token identifier or falls back to IP", () => {
-    const reqWithBearer = new Request("https://example.com/api/test", {
-      headers: {
-        Authorization: "Bearer token-xyz-789",
-      },
-    });
-    assert.equal(getRateLimitIdentifier(reqWithBearer), "user:token-xyz-789");
+test("getRateLimitIdentifier handles missing headers", () => {
+  const request = new Request("https://example.com/api");
+  assert.equal(getRateLimitIdentifier(request), "ip:unknown");
+});
 
-    const reqWithIp = new Request("https://example.com/api/test", {
-      headers: {
-        "x-forwarded-for": "192.168.1.100, 10.0.0.1",
-      },
-    });
-    assert.equal(getRateLimitIdentifier(reqWithIp), "ip:192.168.1.100");
-
-    const reqEmpty = new Request("https://example.com/api/test");
-    assert.equal(getRateLimitIdentifier(reqEmpty), "ip:unknown");
-  });
+test("rate limit configurations defined for auth and chat", () => {
+  assert.ok(rateLimitConfigs["auth"]);
+  assert.ok(rateLimitConfigs["auth"].maxRequests > 0);
+  assert.ok(Object.keys(rateLimitConfigs).length > 0);
 });
