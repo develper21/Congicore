@@ -11,8 +11,8 @@ This document contains the complete list of tasks for building the Congicore app
 | | |
 |:---:|:---:|:---:|
 | 🗂 **Total Tasks** | ✅ **Completed** | 🔄 **In Progress** |
-| **30** | **28** | **1** |
-| ▓▓▓▓▓▓▓▓▓▓ 100% | ▓▓▓▓▓▓▓▓▓▓ 93% | ▓░░░░░░░░░ 3% |
+| **31** | **30** | **0** |
+| ▓▓▓▓▓▓▓▓▓▓ 100% | ▓▓▓▓▓▓▓▓▓▓ 97% | ░░░░░░░░░░ 0% |
 
 ---
 
@@ -85,5 +85,6 @@ Verify, test and document the entire project.
 | 6.1 | Seed script (demo account + realistic data) | 🔴 High | ✅ Completed | Atlas + `--keep` flag |
 | 6.2 | Smoke test script (20 checks) | 🔴 High | ✅ Completed | `npm run smoke` |
 | 6.3 | Postman collection (38 routes) + verify script | 🔴 High | ✅ Completed | FULL COVERAGE ✅ |
-| 6.4 | Project docs folder (PRD, ARCHITECTURE, RULES, DESIGN, TASKS, MEMORY) | 🔴 High | 🔄 In Progress | This folder 📚 |
+| 6.4 | Project docs folder (PRD, ARCHITECTURE, RULES, DESIGN, TASKS, MEMORY) | 🔴 High | ✅ Completed | 6 files in docs/ 📚 |
 | 6.5 | Add real OPENAI_API_KEY for full AI mode | 🔴 High | ⏳ Pending | Fallbacks cover until then |
+| 6.6 | Unit tests for core logic (CI Test step) | 🔴 High | ✅ Completed | tests/, 38/38 pass |
