@@ -27,7 +27,9 @@ This document keeps track of the current state of the project, important decisio
 - ✅ AWS S3 removed end-to-end → local file storage (`public/uploads`)
 - ✅ Login issue fixed (seed was pointing to the wrong database)
 - ✅ React duplicate-key error in chat page fixed
-- 🔄 Creating `docs/` folder with all project documentation (this file 📚)
+- ✅ `docs/` folder created with all project documentation (PRD, ARCHITECTURE, RULES, DESIGN, TASKS, MEMORY)
+- ✅ Unit tests added (`tests/` — SM-2, rate limiter, cn, auth) — `npm test` 38/38 passing; unblocks CI Test step
+- ✅ Local CI parity verified: lint (0 errors), `tsc --noEmit`, production build, `npm test` all exit 0
 - ⏳ Real `OPENAI_API_KEY` needed for full AI mode (currently placeholder → fallback mode)
 
 ---
@@ -58,6 +60,9 @@ This document keeps track of the current state of the project, important decisio
 | 6.2 | Smoke test (20/20 passing) + Atlas check script | Sep 28, 2026 |
 | 6.3 | Login fixed (seed DB mismatch) — verified live on :3000 | Sep 29, 2026 |
 | 6.4 | Chat duplicate-key React error fixed (unique message keys) | Sep 29, 2026 |
+| 6.5 | docs/ folder created (6 markdown files, screenshot-style design) | Sep 30, 2026 |
+| 6.6 | Unit tests added (tests/ folder) — CI Test step unblocked, 38/38 pass | Sep 30, 2026 |
+| 6.7 | Local CI parity: lint + tsc + build + test all green | Sep 30, 2026 |
 
 ---
 
@@ -65,7 +70,7 @@ This document keeps track of the current state of the project, important decisio
 
 | # | Task | Started On |
 |---|---|---|
-| 6.5 | Create docs/ folder (PRD, ARCHITECTURE, RULES, DESIGN, TASKS, MEMORY) | Sep 30, 2026 |
+| — | *(nothing currently in progress)* | — |
 
 ---
 
